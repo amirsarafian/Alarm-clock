@@ -1,5 +1,6 @@
 package com.example.ui.ringing
 
+import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
@@ -11,6 +12,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -67,11 +69,13 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
 import com.example.receiver.AlarmReceiver
 import com.example.service.AlarmService
 import com.example.ui.theme.MyApplicationTheme
@@ -82,10 +86,30 @@ import java.util.Locale
 
 class AlarmRingingActivity : ComponentActivity() {
 
+    private val confirmCredentialLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // Secure credential (PIN, pattern, password, or biometric) succeeded!
+            sendDismissBroadcast()
+            finish()
+        } else {
+            Toast.makeText(
+                this,
+                getString(R.string.auth_required_toast),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setupLockscreenWake()
+
+        if (intent?.getBooleanExtra("REQUEST_UNLOCK_CHALLENGE", false) == true) {
+            attemptDismissWithUnlock()
+        }
 
         setContent {
             MyApplicationTheme(darkTheme = true) {
@@ -126,17 +150,22 @@ class AlarmRingingActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra("REQUEST_UNLOCK_CHALLENGE", false)) {
+            attemptDismissWithUnlock()
+        }
+    }
+
     private fun setupLockscreenWake() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
-            val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-            km.requestDismissKeyguard(this, null)
         } else {
             @Suppress("DEPRECATION")
             window.addFlags(
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
                         WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             )
@@ -150,7 +179,7 @@ class AlarmRingingActivity : ComponentActivity() {
                 action = AlarmReceiver.ACTION_MUTE_ALARM
             }
             sendBroadcast(muteIntent)
-            Toast.makeText(this, "آلارم بی‌صدا شد. تا ۱ دقیقه قفل را باز کنید.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.smart_muted_banner), Toast.LENGTH_SHORT).show()
             return true
         }
         return super.onKeyDown(keyCode, event)
@@ -158,8 +187,23 @@ class AlarmRingingActivity : ComponentActivity() {
 
     private fun attemptDismissWithUnlock() {
         val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+        if (km.isDeviceSecure) {
+            // User configured secure PIN, pattern, password, or biometrics.
+            // If device is locked, launch the secure credential challenge!
+            if (km.isDeviceLocked) {
+                val authIntent = km.createConfirmDeviceCredentialIntent(
+                    getString(R.string.auth_prompt_title),
+                    getString(R.string.auth_prompt_desc)
+                )
+                if (authIntent != null) {
+                    confirmCredentialLauncher.launch(authIntent)
+                    return
+                }
+            }
+        }
+
+        // If not locked or device doesn't have secure lock, check keyguard
         if (km.isKeyguardLocked) {
-            // Require user to unlock
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 km.requestDismissKeyguard(this, object : KeyguardManager.KeyguardDismissCallback() {
                     override fun onDismissSucceeded() {
@@ -172,7 +216,7 @@ class AlarmRingingActivity : ComponentActivity() {
                         super.onDismissCancelled()
                         Toast.makeText(
                             this@AlarmRingingActivity,
-                            "برای قطع قطعی آلارم، باز کردن قفل گوشی الزامی است!",
+                            getString(R.string.auth_required_toast),
                             Toast.LENGTH_LONG
                         ).show()
                     }
@@ -182,7 +226,7 @@ class AlarmRingingActivity : ComponentActivity() {
                 finish()
             }
         } else {
-            // Already unlocked
+            // Already fully unlocked
             sendDismissBroadcast()
             finish()
         }
@@ -215,7 +259,9 @@ fun RingingScreenContent(
     val isMuted = state?.isMuted == true
     val remainingSeconds = state?.muteRemainingSeconds ?: 60
     val volumePercent = state?.currentVolumePercent ?: 0
-    val alarmLabel = state?.alarm?.label ?: "آلارم بیدارباش"
+    val isPersian = Locale.getDefault().language == "fa"
+    val defaultLabel = stringResource(R.string.app_name)
+    val alarmLabel = state?.alarm?.label?.ifEmpty { defaultLabel } ?: defaultLabel
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
@@ -254,7 +300,7 @@ fun RingingScreenContent(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = if (isMuted) "سکوت موقت هوشمند" else "ساعت بیدارباش فعال",
+                    text = if (isMuted) stringResource(R.string.ringing_smart_mute_title) else stringResource(R.string.ringing_active_title),
                     color = if (isMuted) Color(0xFFFFB74D) else Color(0xFF80D8FF),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium
@@ -295,7 +341,7 @@ fun RingingScreenContent(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "صدای زنگ: $volumePercent%",
+                        text = if (isPersian) "صدای زنگ: $volumePercent%" else "Volume: $volumePercent%",
                         color = Color(0xFFB0BEC5),
                         fontSize = 13.sp
                     )
@@ -311,7 +357,7 @@ fun RingingScreenContent(
                 .padding(vertical = 12.dp)
         ) {
             if (isMuted) {
-                // Smart Mute Countdown Card (Requirement 6)
+                // Smart Mute Countdown Card
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -338,21 +384,22 @@ fun RingingScreenContent(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "آلارم موقتاً بی‌صدا شد",
+                            text = stringResource(R.string.ringing_smart_mute_title),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFFCC80)
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "مهلت باقی‌مانده برای باز کردن قفل گوشی:",
+                            text = stringResource(R.string.ringing_muted_banner_text, remainingSeconds),
                             fontSize = 13.sp,
                             color = Color(0xFFFFE0B2),
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            lineHeight = 20.sp
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = "$remainingSeconds ثانیه",
+                            text = if (isPersian) "$remainingSeconds ثانیه" else "$remainingSeconds s",
                             fontSize = 36.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFFF9800)
@@ -366,14 +413,6 @@ fun RingingScreenContent(
                                 .clip(RoundedCornerShape(3.dp)),
                             color = Color(0xFFFF9800),
                             trackColor = Color(0xFF422E1A)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = "اگر ظرف ۶۰ ثانیه قفل گوشی را باز نکنید، آلارم مجدداً با بالاترین صدا زنگ خواهد زد تا حتما بیدار شوید.",
-                            fontSize = 12.sp,
-                            color = Color(0xFFFFCCBC),
-                            textAlign = TextAlign.Center,
-                            lineHeight = 18.sp
                         )
                     }
                 }
@@ -412,7 +451,7 @@ fun RingingScreenContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Requirement 6: Option to mute with Power button or direct button
+            // Option to mute with Power button or direct button
             if (!isMuted) {
                 OutlinedButton(
                     onClick = onMuteClick,
@@ -437,7 +476,7 @@ fun RingingScreenContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "بی‌صدا کردن موقت (یا فشردن دکمه پاور)",
+                        text = if (isPersian) "بی‌صدا کردن موقت (دکمه پاور)" else "Mute temporarily (Power button)",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -465,13 +504,13 @@ fun RingingScreenContent(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(horizontalAlignment = Alignment.Start) {
                     Text(
-                        text = "قطع قطعی آلارم",
+                        text = stringResource(R.string.dismiss),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
-                        text = "نیازمند بازگشایی قفل گوشی",
+                        text = stringResource(R.string.dismiss_with_unlock),
                         fontSize = 11.sp,
                         color = Color(0xFFE8F5E9)
                     )
@@ -497,7 +536,7 @@ fun RingingScreenContent(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "تعویق به مدت ۵ دقیقه (Snooze)",
+                    text = stringResource(R.string.snooze),
                     fontSize = 13.sp
                 )
             }

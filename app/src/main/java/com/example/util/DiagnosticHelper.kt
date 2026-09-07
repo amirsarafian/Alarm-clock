@@ -57,27 +57,45 @@ object DiagnosticHelper {
         val maxAlarmVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
         val ringerMode = audioManager.ringerMode
 
+        val isPersian = java.util.Locale.getDefault().language == "fa"
         val issues = mutableListOf<String>()
         if (!canScheduleExact) {
-            issues.add("مجوز آلارم دقیق (Exact Alarm) داده نشده است - ممکن است زنگ با تاخیر مواجه شود.")
+            issues.add(
+                if (isPersian) "مجوز آلارم دقیق (Exact Alarm) داده نشده است - ممکن است زنگ با تاخیر مواجه شود."
+                else "Exact Alarm permission not granted - alarm might trigger late."
+            )
         }
         if (!isBatteryIgnored) {
-            issues.add("بهینه‌سازی باتری (Battery Optimization) برای برنامه فعال است - ممکن است سیستم در حالت خواب (Doze) آلارم را به تعویق بیندازد.")
+            issues.add(
+                if (isPersian) "بهینه‌سازی باتری (Battery Optimization) برای برنامه فعال است - ممکن است سیستم در حالت خواب (Doze) آلارم را به تعویق بیندازد."
+                else "Battery Optimization is enabled - system Doze mode may postpone the alarm."
+            )
         }
         if (!areNotificationsEnabled) {
-            issues.add("اعلان‌های برنامه مسدود است - کاربر هشدار زنگ را مشاهده نخواهد کرد.")
+            issues.add(
+                if (isPersian) "اعلان‌های برنامه مسدود است - کاربر هشدار زنگ را مشاهده نخواهد کرد."
+                else "App notifications are disabled - alarm heads-up banner won't show."
+            )
         }
         if (!canFullScreen) {
-            issues.add("مجوز باز شدن تمام صفحه (Full Screen Intent) فعال نیست.")
+            issues.add(
+                if (isPersian) "مجوز باز شدن تمام صفحه (Full Screen Intent) فعال نیست."
+                else "Full screen intent permission is not active."
+            )
         }
         if (alarmVol == 0) {
-            issues.add("میزان صدای آلارم سیستم روی صفر (بی‌صدا) تنظیم است.")
+            issues.add(
+                if (isPersian) "میزان صدای آلارم سیستم روی صفر (بی‌صدا) تنظیم است."
+                else "System alarm volume is currently muted (0)."
+            )
         }
 
         val summaryPersian = if (issues.isEmpty()) {
-            "وضعیت سیستم ایده‌آل است: تمامی پیش‌نیازهای زنگ دقیق، معافیت باتری و هشدارها با موفقیت فعال هستند."
+            if (isPersian) "وضعیت سیستم ایده‌آل است: تمامی پیش‌نیازهای زنگ دقیق، معافیت باتری و هشدارها با موفقیت فعال هستند."
+            else "System status is optimal: Exact alarms, battery bypass, and alarm alerts are all active."
         } else {
-            "هشدار موانع احتمالی زنگ زدن:\n" + issues.joinToString("\n• ", prefix = "• ")
+            val prefix = if (isPersian) "هشدار موانع احتمالی زنگ زدن:\n" else "Potential alarm delay warnings:\n"
+            prefix + issues.joinToString("\n• ", prefix = "• ")
         }
 
         val technicalDetails = buildString {

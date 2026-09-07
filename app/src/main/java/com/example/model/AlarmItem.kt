@@ -30,20 +30,18 @@ data class AlarmItem(
     }
 
     fun getDaysDescription(): String {
-        if (daysOfWeek.isEmpty()) return "یک‌بار (One-time)"
-        if (daysOfWeek.size == 7) return "هر روز (Every day)"
-        if (daysOfWeek.containsAll(listOf(6, 7))) {
-            if (daysOfWeek.size == 2) return "آخر هفته"
+        val isPersian = java.util.Locale.getDefault().language == "fa"
+        if (daysOfWeek.isEmpty()) return if (isPersian) "یک‌بار" else "Once"
+        if (daysOfWeek.size == 7) return if (isPersian) "هر روز" else "Every day"
+        if (daysOfWeek.containsAll(listOf(6, 7)) && daysOfWeek.size == 2) {
+            return if (isPersian) "آخر هفته" else "Weekends"
         }
-        val dayNames = mapOf(
-            6 to "ش",
-            7 to "ی",
-            1 to "د",
-            2 to "س",
-            3 to "چ",
-            4 to "پ",
-            5 to "ج"
-        )
-        return daysOfWeek.sorted().joinToString("، ") { dayNames[it] ?: "$it" }
+        val faNames = mapOf(6 to "ش", 7 to "ی", 1 to "د", 2 to "س", 3 to "چ", 4 to "پ", 5 to "ج")
+        val enNames = mapOf(1 to "Mon", 2 to "Tue", 3 to "Wed", 4 to "Thu", 5 to "Fri", 6 to "Sat", 7 to "Sun")
+        return if (isPersian) {
+            daysOfWeek.sorted().joinToString("، ") { faNames[it] ?: "$it" }
+        } else {
+            daysOfWeek.sorted().joinToString(", ") { enNames[it] ?: "$it" }
+        }
     }
 }

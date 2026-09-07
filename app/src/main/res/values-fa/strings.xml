@@ -1,0 +1,81 @@
+<resources>
+    <string name="app_name">ساعت زنگ‌دار</string>
+    <string name="app_subtitle">Android 16 • دقت قطعی و لاگ‌محور</string>
+    <string name="alarms_tab">آلارم‌ها (%1$d)</string>
+    <string name="logs_tab">لاگ و عیب‌یابی (%1$d)</string>
+    <string name="add_alarm">افزودن آلارم</string>
+    <string name="edit_alarm">ویرایش آلارم</string>
+    <string name="alarm_label">عنوان آلارم</string>
+    <string name="default_alarm_label">صبح بخیر</string>
+    <string name="repeat_days_title">روزهای تکرار (خالی = یک‌بار):</string>
+    <string name="alarm_volume">میزان صدای اختصاصی این آلارم:</string>
+    <string name="gradual_volume">افزایش تدریجی صدا (Crescendo)</string>
+    <string name="gradual_volume_desc">شروع با صدای ملایم و افزایش محسوس صدا هر ۱۰ ثانیه</string>
+    <string name="smart_mute_title">سکوت با پاور + الزام بازگشایی قفل</string>
+    <string name="smart_mute_desc">امکان سایلنت با پاور، اما تا ۱ دقیقه باید قفل گوشی باز شود وگرنه دوباره زنگ می‌زند.</string>
+    <string name="vibrate">لرزش</string>
+    <string name="save">ذخیره آلارم</string>
+    <string name="cancel">انصراف</string>
+    <string name="delete">حذف</string>
+    <string name="dismiss">قطع آلارم</string>
+    <string name="dismiss_with_unlock">قطع کامل (باز کردن قفل)</string>
+    <string name="snooze">تعویق (۵ دقیقه)</string>
+    <string name="smart_muted_banner">آلارم با دکمه پاور بی‌صدا شد! ۱ دقیقه مهلت دارید قفل گوشی را باز کرده و قطع کنید، وگرنه دوباره زنگ می‌زند.</string>
+
+    <string name="next_alarm_prefix">زنگ بعدی: %1$s (%2$s)</string>
+    <string name="next_alarm_in_hours_mins">حدود %1$d ساعت و %2$d دقیقه دیگر به صدا درمی‌آید</string>
+    <string name="no_active_alarms">هیچ آلارم فعالی تنظیم نشده است</string>
+    <string name="no_active_alarms_desc">برای بیدارباش به موقع، یک آلارم جدید اضافه کنید</string>
+    <string name="empty_alarms_title">لیست آلارم‌ها خالی است</string>
+    <string name="empty_alarms_desc">برای افزودن ساعت بیدارباش دکمه + را لمس کنید</string>
+
+    <string name="test_alarm_btn">تست زنگ (۱۰ ثانیه)</string>
+    <string name="clear_logs_btn">پاکسازی</string>
+    <string name="filter_all">همه (%1$d)</string>
+    <string name="filter_warnings">خطاها و تاخیرها</string>
+    <string name="filter_dismiss">قطع شدن</string>
+    <string name="filter_mute">سکوت هوشمند</string>
+    <string name="empty_logs_text">هنوز لاگی ثبت نشده است.\nرویدادهای زنگ، قطع شدن، سکوت و تست سلامت در اینجا نمایش داده می‌شوند.</string>
+
+    <string name="system_health_ok">وضعیت سیستم: آماده و بدون مانع</string>
+    <string name="system_health_warning">نیازمند تنظیم برای دقت ۱۰۰٪</string>
+    <string name="system_audit_title">بررسی سلامت سیستم</string>
+    <string name="recheck">بررسی مجدد</string>
+    <string name="exact_alarm_perm">مجوز آلارم دقیق (Exact Alarm)</string>
+    <string name="battery_opt_perm">معافیت از محدودیت باتری (Doze Bypass)</string>
+    <string name="notification_perm">اعلان‌ها و هشدار تمام‌صفحه</string>
+    <string name="action_enable">فعال‌سازی</string>
+    <string name="action_fix">رفع محدودیت</string>
+    <string name="view_technical_details">مشاهده دلایل فنی</string>
+    <string name="hide_technical_details">بستن جزییات فنی</string>
+    <string name="delay_metric_format">میزان تاخیر سیستمی: %1$d میلی‌ثانیه</string>
+    <string name="delay_ideal"> (دقت ایده‌آل)</string>
+    <string name="delay_warning"> (بیش از حد نرمال؛ علت احتمالی: محدودیت باتری یا خواب عمیق)</string>
+
+    <string name="badge_on_time">زنگ سر وقت</string>
+    <string name="badge_delay_warning">هشدار تاخیر</string>
+    <string name="badge_power_mute">سکوت دکمه پاور</string>
+    <string name="badge_unlocked_dismiss">قطع با بازگشایی قفل</string>
+    <string name="badge_resumed">زنگ مجدد (عدم بازگشایی)</string>
+    <string name="badge_snooze">تعویق (Snooze)</string>
+    <string name="badge_scheduled">زمان‌بندی دقیق</string>
+    <string name="badge_audit">بررسی سیستم</string>
+    <string name="badge_reboot">بازیابی پس از ریبوت</string>
+
+    <string name="badge_gradual">تدریجی</string>
+    <string name="badge_lock_1min">قفل ۱ دقیقه</string>
+    <string name="one_time">یک‌بار</string>
+    <string name="every_day">هر روز</string>
+    <string name="weekends">آخر هفته</string>
+
+    <string name="ringing_active_title">ساعت بیدارباش فعال</string>
+    <string name="ringing_smart_mute_title">سکوت موقت هوشمند</string>
+    <string name="ringing_muted_banner_text">با دکمه پاور بی‌صدا شد • تا %1$d ثانیه قفل گوشی را باز کنید وگرنه مجدد زنگ می‌زند</string>
+    <string name="auth_required_toast">برای قطع قطعی آلارم، باز کردن قفل گوشی (الگو، پین یا اثر انگشت) الزامی است!</string>
+    <string name="auth_prompt_title">قطع آلارم بیدارباش</string>
+    <string name="auth_prompt_desc">برای خاموش کردن آلارم، قفل گوشی خود را باز کنید</string>
+    <string name="notif_muted_title">آلارم بی‌صدا شد (%1$d ثانیه باقی‌مانده)</string>
+    <string name="notif_ringing_title">آلارم در حال زنگ زدن: %1$s</string>
+    <string name="notif_muted_content">تا ۱ دقیقه قفل گوشی را باز کرده و قطع کنید؛ در غیر این صورت دوباره با صدای بلند زنگ می‌زند.</string>
+    <string name="notif_ringing_content">برای بی‌صدا کردن موقت دکمه پاور را بفشارید. برای قطع دائم قفل گوشی را باز کنید.</string>
+</resources>

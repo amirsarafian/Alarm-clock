@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,6 +44,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -61,6 +63,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -144,7 +147,7 @@ fun AlarmClockMainScreen(viewModel: MainViewModel) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
         topBar = {
             TopAppBar(
                 title = {
@@ -171,12 +174,12 @@ fun AlarmClockMainScreen(viewModel: MainViewModel) {
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = "ساعت زنگ‌دار هوشمند",
+                                    text = stringResource(R.string.app_name),
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "Android 16 • دقت قطعی و لاگ‌محور",
+                                    text = stringResource(R.string.app_subtitle),
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -201,12 +204,14 @@ fun AlarmClockMainScreen(viewModel: MainViewModel) {
             if (selectedTab == 0) {
                 FloatingActionButton(
                     onClick = { showAddDialog = true },
-                    modifier = Modifier.testTag("add_alarm_fab"),
+                    modifier = Modifier
+                        .navigationBarsPadding()
+                        .testTag("add_alarm_fab"),
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = RoundedCornerShape(18.dp)
                 ) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "افزودن آلارم")
+                    Icon(imageVector = Icons.Default.Add, contentDescription = stringResource(R.string.add_alarm))
                 }
             }
         }
@@ -232,7 +237,7 @@ fun AlarmClockMainScreen(viewModel: MainViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(imageVector = Icons.Default.Alarm, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("آلارم‌ها (${alarms.size})")
+                            Text(stringResource(R.string.alarms_tab, alarms.size))
                         }
                     }
                 )
@@ -244,7 +249,7 @@ fun AlarmClockMainScreen(viewModel: MainViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(imageVector = Icons.Default.History, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("لاگ و عیب‌یابی (${logs.size})")
+                            Text(stringResource(R.string.logs_tab, logs.size))
                         }
                     }
                 )
@@ -316,7 +321,7 @@ fun AlarmsListContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+        contentPadding = PaddingValues(start = 16.dp, top = 14.dp, end = 16.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // Next Alarm Banner
@@ -355,27 +360,27 @@ fun AlarmsListContent(
                             val hours = diffMs / (1000 * 60 * 60)
                             val minutes = (diffMs / (1000 * 60)) % 60
                             Text(
-                                text = "زنگ بعدی: ${nextAlarmInfo.first.label} (${nextAlarmInfo.first.getFormattedTime()})",
+                                text = stringResource(R.string.next_alarm_prefix, nextAlarmInfo.first.label, nextAlarmInfo.first.getFormattedTime()),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "حدود $hours ساعت و $minutes دقیقه دیگر به صدا درمی‌آید",
+                                text = stringResource(R.string.next_alarm_in_hours_mins, hours, minutes),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
                         } else {
                             Text(
-                                text = "هیچ آلارم فعالی تنظیم نشده است",
+                                text = stringResource(R.string.no_active_alarms),
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 14.sp,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "برای بیدارباش به موقع، یک آلارم جدید اضافه کنید",
+                                text = stringResource(R.string.no_active_alarms_desc),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
@@ -403,14 +408,14 @@ fun AlarmsListContent(
                         )
                         Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            text = "لیست آلارم‌ها خالی است",
+                            text = stringResource(R.string.empty_alarms_title),
                             fontSize = 17.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "برای افزودن ساعت بیدارباش دکمه + را لمس کنید",
+                            text = stringResource(R.string.empty_alarms_desc),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

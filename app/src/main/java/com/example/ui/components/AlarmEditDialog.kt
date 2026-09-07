@@ -50,10 +50,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.model.AlarmItem
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -71,7 +74,9 @@ fun AlarmEditDialog(
         is24Hour = true
     )
 
-    var label by remember { mutableStateOf(alarm?.label ?: "صبح بخیر") }
+    val isPersian = Locale.getDefault().language == "fa"
+    val defaultLabel = stringResource(R.string.default_alarm_label)
+    var label by remember { mutableStateOf(alarm?.label ?: defaultLabel) }
     var volume by remember { mutableIntStateOf(alarm?.volume ?: 85) }
     var isGradualVolume by remember { mutableStateOf(alarm?.isGradualVolume ?: true) }
     var isSmartMuteEnabled by remember { mutableStateOf(alarm?.isSmartMuteEnabled ?: true) }
@@ -85,22 +90,34 @@ fun AlarmEditDialog(
         }
     }
 
-    // Days mapping: 6=شنبه, 7=یکشنبه, 1=دوشنبه, 2=سه‌شنبه, 3=چهارشنبه, 4=پنج‌شنبه, 5=جمعه
-    val daysList = listOf(
-        6 to "شنبه",
-        7 to "۱شنبه",
-        1 to "۲شنبه",
-        2 to "۳شنبه",
-        3 to "۴شنبه",
-        4 to "۵شنبه",
-        5 to "جمعه"
-    )
+    // Days mapping: 6=Sat, 7=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri
+    val daysList = if (isPersian) {
+        listOf(
+            6 to "شنبه",
+            7 to "۱شنبه",
+            1 to "۲شنبه",
+            2 to "۳شنبه",
+            3 to "۴شنبه",
+            4 to "۵شنبه",
+            5 to "جمعه"
+        )
+    } else {
+        listOf(
+            6 to "Sat",
+            7 to "Sun",
+            1 to "Mon",
+            2 to "Tue",
+            3 to "Wed",
+            4 to "Thu",
+            5 to "Fri"
+        )
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = if (alarm == null) "افزودن آلارم جدید" else "ویرایش آلارم",
+                text = if (alarm == null) stringResource(R.string.add_alarm) else stringResource(R.string.edit_alarm),
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp
             )
@@ -127,7 +144,7 @@ fun AlarmEditDialog(
                 OutlinedTextField(
                     value = label,
                     onValueChange = { label = it },
-                    label = { Text("عنوان آلارم") },
+                    label = { Text(stringResource(R.string.alarm_label)) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -137,7 +154,7 @@ fun AlarmEditDialog(
 
                 // Days of week
                 Text(
-                    text = "روزهای تکرار (خالی = یک‌بار):",
+                    text = stringResource(R.string.repeat_days_title),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -195,7 +212,7 @@ fun AlarmEditDialog(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "میزان صدای اختصاصی این آلارم:",
+                                    text = stringResource(R.string.alarm_volume),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium
                                 )
@@ -246,12 +263,12 @@ fun AlarmEditDialog(
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
-                                    text = "افزایش تدریجی صدا (Crescendo)",
+                                    text = stringResource(R.string.gradual_volume),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = "شروع با صدای ملایم و افزایش پیوسته در ۳۰ ثانیه",
+                                    text = stringResource(R.string.gradual_volume_desc),
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -293,12 +310,12 @@ fun AlarmEditDialog(
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
-                                    text = "سکوت با پاور + الزام بازگشایی قفل",
+                                    text = stringResource(R.string.smart_mute_title),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = "امکان سایلنت با پاور، اما تا ۱ دقیقه باید قفل گوشی باز شود وگرنه دوباره زنگ می‌زند.",
+                                    text = stringResource(R.string.smart_mute_desc),
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -320,7 +337,7 @@ fun AlarmEditDialog(
                         id = alarm?.id ?: 0L,
                         hour = timePickerState.hour,
                         minute = timePickerState.minute,
-                        label = label.ifBlank { "آلارم" },
+                        label = label.ifBlank { defaultLabel },
                         isEnabled = true,
                         daysOfWeek = selectedDays.toList(),
                         volume = volume,
@@ -333,7 +350,7 @@ fun AlarmEditDialog(
                 },
                 modifier = Modifier.testTag("save_alarm_button")
             ) {
-                Text("ذخیره آلارم")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
@@ -341,7 +358,7 @@ fun AlarmEditDialog(
                 onClick = onDismiss,
                 modifier = Modifier.testTag("cancel_alarm_button")
             ) {
-                Text("انصراف")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

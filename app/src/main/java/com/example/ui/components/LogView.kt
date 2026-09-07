@@ -62,6 +62,7 @@ import com.example.model.AlarmLog
 import com.example.model.LogLevel
 import com.example.util.DiagnosticHelper
 import com.example.util.SystemStatusReport
+import java.util.Locale
 
 @Composable
 fun LogView(
@@ -73,6 +74,7 @@ fun LogView(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val isPersian = Locale.getDefault().language == "fa"
     var selectedFilter by remember { mutableStateOf("ALL") }
 
     val filteredLogs = remember(logs, selectedFilter) {
@@ -86,7 +88,7 @@ fun LogView(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // System Diagnostics Status Card (Requirement 1 & 2)
@@ -142,7 +144,10 @@ fun LogView(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = "تست زنگ (۱۰ ثانیه)", fontSize = 12.sp)
+                    Text(
+                        text = if (isPersian) "تست زنگ (۱۰ ثانیه)" else "Test Alarm (10s)",
+                        fontSize = 12.sp
+                    )
                 }
 
                 OutlinedButton(
@@ -156,7 +161,10 @@ fun LogView(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "پاکسازی", fontSize = 12.sp)
+                    Text(
+                        text = if (isPersian) "پاکسازی" else "Clear Logs",
+                        fontSize = 12.sp
+                    )
                 }
             }
         }
@@ -170,22 +178,22 @@ fun LogView(
                 FilterChip(
                     selected = selectedFilter == "ALL",
                     onClick = { selectedFilter = "ALL" },
-                    label = { Text("همه (${logs.size})", fontSize = 11.sp) }
+                    label = { Text(if (isPersian) "همه (${logs.size})" else "All (${logs.size})", fontSize = 11.sp) }
                 )
                 FilterChip(
                     selected = selectedFilter == "WARNINGS",
                     onClick = { selectedFilter = "WARNINGS" },
-                    label = { Text("خطاها و تاخیرها", fontSize = 11.sp) }
+                    label = { Text(if (isPersian) "خطاها" else "Warnings", fontSize = 11.sp) }
                 )
                 FilterChip(
                     selected = selectedFilter == "DISMISS",
                     onClick = { selectedFilter = "DISMISS" },
-                    label = { Text("قطع شدن", fontSize = 11.sp) }
+                    label = { Text(if (isPersian) "قطع شدن" else "Dismissals", fontSize = 11.sp) }
                 )
                 FilterChip(
                     selected = selectedFilter == "MUTE",
                     onClick = { selectedFilter = "MUTE" },
-                    label = { Text("سکوت هوشمند", fontSize = 11.sp) }
+                    label = { Text(if (isPersian) "سکوت هوشمند" else "Smart Mute", fontSize = 11.sp) }
                 )
             }
         }
@@ -200,7 +208,10 @@ fun LogView(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "هنوز لاگی ثبت نشده است.\nرویدادهای زنگ، قطع شدن، سکوت و تست سلامت در اینجا نمایش داده می‌شوند.",
+                        text = if (isPersian)
+                            "هنوز لاگی ثبت نشده است.\nرویدادهای زنگ، قطع شدن، سکوت و تست سلامت در اینجا نمایش داده می‌شوند."
+                        else
+                            "No logs recorded yet.\nRinging, dismissal, smart mute and health audits will appear here.",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 13.sp,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -226,6 +237,7 @@ fun SystemHealthCard(
     onFixNotification: () -> Unit
 ) {
     val isAllGood = report.canScheduleExactAlarms && report.isBatteryOptimizationIgnored && report.areNotificationsEnabled
+    val isPersian = Locale.getDefault().language == "fa"
 
     Card(
         modifier = Modifier
@@ -255,7 +267,11 @@ fun SystemHealthCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (isAllGood) "وضعیت سیستم: آماده و بدون مانع" else "نیازمند تنظیم برای دقت ۱۰۰٪",
+                        text = if (isAllGood) {
+                            if (isPersian) "وضعیت سیستم: آماده و بدون مانع" else "System Status: Ready & Optimal"
+                        } else {
+                            if (isPersian) "نیازمند تنظیم برای دقت ۱۰۰٪" else "Setup Required for Precision"
+                        },
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = if (isAllGood) Color(0xFFC8E6C9) else Color(0xFFFFCDD2)
@@ -265,7 +281,7 @@ fun SystemHealthCard(
                 IconButton(onClick = onRunAudit) {
                     Icon(
                         imageVector = Icons.Default.Refresh,
-                        contentDescription = "بررسی مجدد",
+                        contentDescription = if (isPersian) "بررسی مجدد" else "Refresh Audit",
                         tint = if (isAllGood) Color(0xFF81C784) else Color(0xFFFF8A80)
                     )
                 }
@@ -275,21 +291,21 @@ fun SystemHealthCard(
 
             // Diagnostic checklist
             DiagnosticRow(
-                title = "مجوز آلارم دقیق (Exact Alarm)",
+                title = if (isPersian) "مجوز آلارم دقیق (Exact Alarm)" else "Exact Alarm Permission",
                 isOk = report.canScheduleExactAlarms,
-                actionLabel = "فعال‌سازی",
+                actionLabel = if (isPersian) "فعال‌سازی" else "Enable",
                 onFix = onFixExactAlarm
             )
             DiagnosticRow(
-                title = "معافیت از محدودیت باتری (Doze Bypass)",
+                title = if (isPersian) "معافیت از محدودیت باتری (Doze Bypass)" else "Battery Optimization Exemption",
                 isOk = report.isBatteryOptimizationIgnored,
-                actionLabel = "رفع محدودیت",
+                actionLabel = if (isPersian) "رفع محدودیت" else "Exempt",
                 onFix = onFixBattery
             )
             DiagnosticRow(
-                title = "اعلان‌ها و هشدار تمام‌صفحه",
+                title = if (isPersian) "اعلان‌ها و هشدار تمام‌صفحه" else "Notifications & Alerts",
                 isOk = report.areNotificationsEnabled,
-                actionLabel = "فعال‌سازی",
+                actionLabel = if (isPersian) "فعال‌سازی" else "Enable",
                 onFix = onFixNotification
             )
 
@@ -352,17 +368,18 @@ private fun DiagnosticRow(
 @Composable
 fun LogItemCard(log: AlarmLog) {
     var isExpanded by remember { mutableStateOf(false) }
+    val isPersian = Locale.getDefault().language == "fa"
 
     val (badgeColor, badgeText) = when (log.eventType) {
-        "TRIGGERED" -> Color(0xFF00E676) to "زنگ سر وقت"
-        "DELAY_WARNING" -> Color(0xFFFF5252) to "هشدار تاخیر"
-        "MUTED_POWER_BUTTON" -> Color(0xFFFFAB00) to "سکوت دکمه پاور"
-        "DISMISSED_UNLOCKED" -> Color(0xFF00E5FF) to "قطع با بازگشایی قفل"
-        "RESUMED_UNANSWERED" -> Color(0xFFFF1744) to "زنگ مجدد (عدم بازگشایی)"
-        "SNOOZED" -> Color(0xFF90CAF9) to "تعویق (Snooze)"
-        "SCHEDULED" -> Color(0xFFB388FF) to "زمان‌بندی دقیق"
-        "SYSTEM_AUDIT" -> Color(0xFF69F0AE) to "بررسی سیستم"
-        "REBOOT_RESTORED" -> Color(0xFF40C4FF) to "بازیابی پس از ریبوت"
+        "TRIGGERED" -> Color(0xFF00E676) to (if (isPersian) "زنگ سر وقت" else "Triggered On Time")
+        "DELAY_WARNING" -> Color(0xFFFF5252) to (if (isPersian) "هشدار تاخیر" else "Delay Warning")
+        "MUTED_POWER_BUTTON" -> Color(0xFFFFAB00) to (if (isPersian) "سکوت دکمه پاور" else "Muted (Power)")
+        "DISMISSED_UNLOCKED" -> Color(0xFF00E5FF) to (if (isPersian) "قطع با بازگشایی قفل" else "Dismissed (Unlocked)")
+        "RESUMED_UNANSWERED" -> Color(0xFFFF1744) to (if (isPersian) "زنگ مجدد (عدم بازگشایی)" else "Resumed Loud")
+        "SNOOZED" -> Color(0xFF90CAF9) to (if (isPersian) "تعویق (Snooze)" else "Snoozed")
+        "SCHEDULED" -> Color(0xFFB388FF) to (if (isPersian) "زمان‌بندی دقیق" else "Scheduled Exact")
+        "SYSTEM_AUDIT" -> Color(0xFF69F0AE) to (if (isPersian) "بررسی سیستم" else "System Audit")
+        "REBOOT_RESTORED" -> Color(0xFF40C4FF) to (if (isPersian) "بازیابی پس از ریبوت" else "Reboot Restored")
         else -> Color(0xFFB0BEC5) to log.eventType
     }
 
@@ -421,8 +438,13 @@ fun LogItemCard(log: AlarmLog) {
                 Spacer(modifier = Modifier.height(4.dp))
                 val isDelayed = log.delayMs > 3000L
                 Text(
-                    text = "میزان تاخیر سیستمی: ${log.delayMs} میلی‌ثانیه" +
-                            if (isDelayed) " (بیش از حد نرمال؛ علت احتمالی: محدودیت باتری یا خواب عمیق)" else " (دقت ایده‌آل)",
+                    text = if (isPersian) {
+                        "میزان تاخیر سیستمی: ${log.delayMs} میلی‌ثانیه" +
+                                if (isDelayed) " (بیش از حد نرمال؛ علت احتمالی: محدودیت باتری یا خواب عمیق)" else " (دقت ایده‌آل)"
+                    } else {
+                        "System latency: ${log.delayMs} ms" +
+                                if (isDelayed) " (High; possible battery restriction)" else " (Optimal precision)"
+                    },
                     fontSize = 11.sp,
                     color = if (isDelayed) Color(0xFFFF5252) else Color(0xFF00E676)
                 )
@@ -437,7 +459,11 @@ fun LogItemCard(log: AlarmLog) {
                     horizontalArrangement = Arrangement.End
                 ) {
                     Text(
-                        text = if (isExpanded) "بستن جزییات فنی" else "مشاهده دلایل فنی",
+                        text = if (isExpanded) {
+                            if (isPersian) "بستن جزییات فنی" else "Hide technical details"
+                        } else {
+                            if (isPersian) "مشاهده دلایل فنی" else "View technical details"
+                        },
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.primary
                     )

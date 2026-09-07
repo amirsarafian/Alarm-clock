@@ -1,18 +1,81 @@
 <resources>
     <string name="app_name">Alarm Clock</string>
-    <string name="alarms_tab">آلارم‌ها</string>
-    <string name="logs_tab">لاگ و عیب‌یابی</string>
-    <string name="add_alarm">افزودن آلارم</string>
-    <string name="edit_alarm">ویرایش آلارم</string>
-    <string name="alarm_volume">میزان صدای آلارم</string>
-    <string name="gradual_volume">افزایش تدریجی صدا (Crescendo)</string>
-    <string name="gradual_volume_desc">شروع با صدای کم و افزایش ملایم در طول ۳۰ ثانیه</string>
-    <string name="smart_mute_title">حالت سکوت هوشمند (دکمه پاور)</string>
-    <string name="smart_mute_desc">امکان سایلنت با دکمه پاور؛ اگر ظرف ۱ دقیقه قفل گوشی باز نشود دوباره زنگ خواهد زد</string>
-    <string name="save">ذخیره</string>
-    <string name="cancel">انصراف</string>
-    <string name="delete">حذف</string>
-    <string name="dismiss">قطع قطعی آلارم</string>
-    <string name="snooze">تعویق (۵ دقیقه)</string>
-    <string name="smart_muted_banner">آلارم با دکمه پاور بی‌صدا شد! ۱ دقیقه مهلت دارید قفل گوشی را باز کرده و قطع کنید، وگرنه دوباره زنگ می‌زند.</string>
+    <string name="app_subtitle">Android 16 • High Reliability</string>
+    <string name="alarms_tab">Alarms (%1$d)</string>
+    <string name="logs_tab">Logs &amp; Diagnostics (%1$d)</string>
+    <string name="add_alarm">Add Alarm</string>
+    <string name="edit_alarm">Edit Alarm</string>
+    <string name="alarm_label">Alarm Label</string>
+    <string name="default_alarm_label">Good Morning</string>
+    <string name="repeat_days_title">Repeat Days (Empty = once):</string>
+    <string name="alarm_volume">Alarm Volume:</string>
+    <string name="gradual_volume">Gradual Volume (Crescendo)</string>
+    <string name="gradual_volume_desc">Starts gently and increases noticeably every 10 seconds</string>
+    <string name="smart_mute_title">Power Button Mute + Unlock Required</string>
+    <string name="smart_mute_desc">Mute sound with power button, but you must unlock phone within 1 minute or it rings loudly again.</string>
+    <string name="vibrate">Vibrate</string>
+    <string name="save">Save Alarm</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="dismiss">Dismiss Alarm</string>
+    <string name="dismiss_with_unlock">Unlock to Dismiss</string>
+    <string name="snooze">Snooze (5 min)</string>
+    <string name="smart_muted_banner">Alarm muted with power button! You have 1 minute to unlock and dismiss, otherwise it rings again.</string>
+
+    <string name="next_alarm_prefix">Next alarm: %1$s (%2$s)</string>
+    <string name="next_alarm_in_hours_mins">Rings in about %1$d hours and %2$d minutes</string>
+    <string name="no_active_alarms">No active alarms set</string>
+    <string name="no_active_alarms_desc">Add an alarm to wake up on time</string>
+    <string name="empty_alarms_title">No alarms yet</string>
+    <string name="empty_alarms_desc">Tap the + button to add a new alarm</string>
+
+    <string name="test_alarm_btn">Test Alarm (10s)</string>
+    <string name="clear_logs_btn">Clear</string>
+    <string name="filter_all">All (%1$d)</string>
+    <string name="filter_warnings">Warnings &amp; Delays</string>
+    <string name="filter_dismiss">Dismissed</string>
+    <string name="filter_mute">Smart Mute</string>
+    <string name="empty_logs_text">No logs recorded yet.\nAlarm triggers, dismissals, mutes, and health audits will appear here.</string>
+
+    <string name="system_health_ok">System Status: Optimal &amp; Ready</string>
+    <string name="system_health_warning">Action Required for 100% Accuracy</string>
+    <string name="system_audit_title">System Health Audit</string>
+    <string name="recheck">Recheck</string>
+    <string name="exact_alarm_perm">Exact Alarm Permission</string>
+    <string name="battery_opt_perm">Battery Optimization Bypass (Doze)</string>
+    <string name="notification_perm">Notifications &amp; Full Screen Alert</string>
+    <string name="action_enable">Enable</string>
+    <string name="action_fix">Fix</string>
+    <string name="view_technical_details">View technical details</string>
+    <string name="hide_technical_details">Hide technical details</string>
+    <string name="delay_metric_format">System delay: %1$d ms</string>
+    <string name="delay_ideal"> (Ideal accuracy)</string>
+    <string name="delay_warning"> (Higher than normal; cause: battery restrictions or deep sleep)</string>
+
+    <string name="badge_on_time">On Time</string>
+    <string name="badge_delay_warning">Delay Warning</string>
+    <string name="badge_power_mute">Power Muted</string>
+    <string name="badge_unlocked_dismiss">Dismissed via Unlock</string>
+    <string name="badge_resumed">Resumed (Unanswered)</string>
+    <string name="badge_snooze">Snoozed</string>
+    <string name="badge_scheduled">Scheduled</string>
+    <string name="badge_audit">Health Audit</string>
+    <string name="badge_reboot">Reboot Restored</string>
+
+    <string name="badge_gradual">Crescendo</string>
+    <string name="badge_lock_1min">Unlock 1m</string>
+    <string name="one_time">Once</string>
+    <string name="every_day">Every day</string>
+    <string name="weekends">Weekends</string>
+
+    <string name="ringing_active_title">Alarm Active</string>
+    <string name="ringing_smart_mute_title">Smart Mute Active</string>
+    <string name="ringing_muted_banner_text">Silenced with power button • Unlock phone within %1$d s to turn off permanently</string>
+    <string name="auth_required_toast">PIN, pattern, or fingerprint is required to permanently dismiss this alarm!</string>
+    <string name="auth_prompt_title">Dismiss Alarm</string>
+    <string name="auth_prompt_desc">Unlock your device with your PIN, pattern, or biometric to turn off the alarm</string>
+    <string name="notif_muted_title">Alarm Muted (%1$d s remaining)</string>
+    <string name="notif_ringing_title">Alarm Ringing: %1$s</string>
+    <string name="notif_muted_content">Unlock phone and dismiss within 1 minute; otherwise it will ring loudly again.</string>
+    <string name="notif_ringing_content">Press power button to mute temporarily. Unlock phone to dismiss permanently.</string>
 </resources>

@@ -21,6 +21,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import com.example.AlarmApplication
+import com.example.R
 import com.example.data.AppDatabase
 import com.example.model.AlarmItem
 import com.example.model.AlarmLog
@@ -33,6 +34,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -224,14 +226,14 @@ class AlarmService : Service() {
             }
 
             if (alarm.isGradualVolume) {
-                // Crescendo: start very soft (5%) and ramp up smoothly
-                val startVolume = 0.05f
+                // Crescendo: start gently at 20% and increase noticeably every 10 seconds
+                val startVolume = 0.20f.coerceAtMost(targetVolumeFraction)
                 mediaPlayer?.setVolume(startVolume, startVolume)
-                currentVolumePercent = 5
+                currentVolumePercent = (startVolume * 100).toInt()
                 mediaPlayer?.prepare()
                 mediaPlayer?.start()
 
-                startGradualVolumeRamp(targetVolumeFraction, alarm.gradualDurationSeconds)
+                startGradualVolumeRamp(targetVolumeFraction, startVolume)
             } else {
                 mediaPlayer?.setVolume(targetVolumeFraction, targetVolumeFraction)
                 currentVolumePercent = targetVolumePercent
@@ -247,23 +249,22 @@ class AlarmService : Service() {
         }
     }
 
-    private fun startGradualVolumeRamp(targetVolumeFraction: Float, durationSec: Int) {
+    private fun startGradualVolumeRamp(targetVolumeFraction: Float, startVolume: Float) {
         gradualVolumeJob?.cancel()
         gradualVolumeJob = serviceScope.launch {
-            val totalSteps = durationSec.coerceAtLeast(5)
-            val stepTimeMs = 1000L
-            val volumeIncrement = (targetVolumeFraction - 0.05f) / totalSteps
+            val stepTimeMs = 10_000L // Increase volume every 10 seconds
+            val stepIncrement = 0.20f // Noticeable increase of 20% per step
 
-            var currentVol = 0.05f
-            for (step in 1..totalSteps) {
+            var currentVol = startVolume
+            while (isActive && !isMuted && currentVol < targetVolumeFraction) {
                 delay(stepTimeMs)
-                if (isMuted) break // muted
-                currentVol = (currentVol + volumeIncrement).coerceAtMost(targetVolumeFraction)
+                if (isMuted) break
+                currentVol = (currentVol + stepIncrement).coerceAtMost(targetVolumeFraction)
                 mediaPlayer?.setVolume(currentVol, currentVol)
                 currentVolumePercent = (currentVol * 100).toInt()
                 updateState()
             }
-            if (!isMuted) {
+            if (!isMuted && currentVol >= targetVolumeFraction) {
                 mediaPlayer?.setVolume(targetVolumeFraction, targetVolumeFraction)
                 currentVolumePercent = (targetVolumeFraction * 100).toInt()
                 updateState()
@@ -301,7 +302,7 @@ class AlarmService : Service() {
         isMuted = true
         gradualVolumeJob?.cancel()
 
-        // Silence audio & vibration immediately
+        // Silence audio & stop vibration immediately
         try {
             mediaPlayer?.setVolume(0f, 0f)
         } catch (e: Exception) {
@@ -312,11 +313,12 @@ class AlarmService : Service() {
         remainingMuteSeconds = 60
         updateState()
 
-        // Update foreground notification with mute warning
+        // Post silent notification with mute message once (no vibration, no sound alerts)
         val notification = buildForegroundNotification(alarm, isMuted = true, remainingSeconds = 60)
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         nm.notify(NOTIFICATION_ID, notification)
 
+        val isPersian = java.util.Locale.getDefault().language == "fa"
         // Log mute event
         serviceScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(applicationContext)
@@ -326,22 +328,19 @@ class AlarmService : Service() {
                 timestamp = System.currentTimeMillis(),
                 eventType = "MUTED_POWER_BUTTON",
                 level = LogLevel.WARNING,
-                message = "آلارم موقتاً با دکمه پاور/خاموشی صفحه بی‌صدا شد. کاربر ۶۰ ثانیه مهلت دارد قفل گوشی را باز کند و آلارم را قطع کند.",
+                message = if (isPersian) "آلارم با دکمه پاور بی‌صدا شد. کاربر ۱ دقیقه فرصت دارد قفل گوشی را باز کند."
+                          else "Alarm silenced with power button. User has 1 minute to unlock device.",
                 technicalReason = "ACTION_SCREEN_OFF detected. Smart mute 60s countdown engaged."
             )
             db.alarmLogDao().insertLog(log)
         }
 
-        // 60-second countdown
+        // 60-second countdown without any recurring vibration or alert sounds
         smartMuteJob?.cancel()
         smartMuteJob = serviceScope.launch {
             for (sec in 60 downTo 1) {
                 remainingMuteSeconds = sec
                 updateState()
-                if (sec % 5 == 0) {
-                    val notif = buildForegroundNotification(alarm, isMuted = true, remainingSeconds = sec)
-                    nm.notify(NOTIFICATION_ID, notif)
-                }
                 delay(1000L)
             }
 
@@ -383,6 +382,7 @@ class AlarmService : Service() {
         nm.notify(NOTIFICATION_ID, buildForegroundNotification(alarm, false, 0))
         updateState()
 
+        val isPersian = java.util.Locale.getDefault().language == "fa"
         // Log resume event
         serviceScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(applicationContext)
@@ -392,7 +392,8 @@ class AlarmService : Service() {
                 timestamp = System.currentTimeMillis(),
                 eventType = "RESUMED_UNANSWERED",
                 level = LogLevel.ERROR,
-                message = "مهلت ۱ دقیقه‌ای پایان یافت اما قفل گوشی باز نشد! آلارم با صدای کامل مجدداً به صدا درآمد تا کاربر بیدار شود.",
+                message = if (isPersian) "مهلت ۱ دقیقه‌ای پایان یافت اما قفل گوشی باز نشد! آلارم مجدداً به صدا درآمد."
+                          else "1-minute mute expired without device unlock. Alarm resumed loudly.",
                 technicalReason = "60-second mute countdown elapsed without lockscreen dismissal."
             )
             db.alarmLogDao().insertLog(log)
@@ -402,24 +403,46 @@ class AlarmService : Service() {
     private fun handleDeviceUnlocked() {
         val alarm = currentAlarm ?: return
         val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-        val isLocked = keyguardManager.isKeyguardLocked
+        val isPersian = java.util.Locale.getDefault().language == "fa"
 
-        if (!isLocked) {
-            // Unlocked! Dismiss alarm permanently
-            dismissAlarmSuccessfully("قفل گوشی باز شد و آلارم با موفقیت متوقف شد.")
+        if (keyguardManager.isDeviceSecure) {
+            // Device is configured with PIN/Pattern/Password/Biometrics.
+            // Require user to actually unlock using their credential!
+            if (!keyguardManager.isDeviceLocked) {
+                val reason = if (isPersian) "قفل امنیتی گوشی (پین/پترن/اثر انگشت) باز شد و آلارم با موفقیت قطع گردید."
+                             else "Device unlocked securely. Alarm dismissed."
+                dismissAlarmSuccessfully(reason)
+            }
+        } else {
+            // Unsecured keyguard (swipe or none)
+            if (!keyguardManager.isKeyguardLocked) {
+                val reason = if (isPersian) "قفل صفحه باز شد و آلارم متوقف شد."
+                             else "Keyguard dismissed. Alarm stopped."
+                dismissAlarmSuccessfully(reason)
+            }
         }
     }
 
     private fun handleDismissRequest() {
         val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-        if (keyguardManager.isKeyguardLocked) {
-            // Still locked, open full screen so user unlocks
+        val isPersian = java.util.Locale.getDefault().language == "fa"
+
+        if (keyguardManager.isDeviceSecure && keyguardManager.isDeviceLocked) {
+            // Secure device is currently locked. Trigger authentication challenge!
+            val ringingIntent = Intent(applicationContext, AlarmRingingActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                putExtra("REQUEST_UNLOCK_CHALLENGE", true)
+            }
+            startActivity(ringingIntent)
+        } else if (keyguardManager.isKeyguardLocked) {
             val ringingIntent = Intent(applicationContext, AlarmRingingActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
             }
             startActivity(ringingIntent)
         } else {
-            dismissAlarmSuccessfully("آلارم توسط کاربر با باز بودن قفل گوشی به طور کامل قطع شد.")
+            val msg = if (isPersian) "آلارم توسط کاربر با باز بودن قفل گوشی به طور کامل قطع شد."
+                      else "Alarm dismissed with phone unlocked."
+            dismissAlarmSuccessfully(msg)
         }
     }
 
@@ -560,15 +583,15 @@ class AlarmService : Service() {
         )
 
         val title = if (isMuted) {
-            "آلارم بی‌صدا شد ($remainingSeconds ثانیه باقی‌مانده)"
+            getString(R.string.notif_muted_title, remainingSeconds)
         } else {
-            "آلارم در حال زنگ زدن: ${alarm.label}"
+            getString(R.string.notif_ringing_title, alarm.label)
         }
 
         val content = if (isMuted) {
-            "تا ۱ دقیقه قفل گوشی را باز کرده و قطع کنید؛ در غیر این صورت دوباره با صدای بلند زنگ می‌زند."
+            getString(R.string.notif_muted_content)
         } else {
-            "برای بی‌صدا کردن موقت دکمه پاور را بفشارید. برای قطع دائم قفل گوشی را باز کنید."
+            getString(R.string.notif_ringing_content)
         }
 
         val builder = NotificationCompat.Builder(this, AlarmApplication.ALARM_CHANNEL_ID)
@@ -584,11 +607,14 @@ class AlarmService : Service() {
             .setContentIntent(fullScreenPendingIntent)
 
         if (isMuted) {
-            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "قطع کامل (باز کردن قفل)", dismissPendingIntent)
+            builder.setSilent(true)
+            builder.setOnlyAlertOnce(true)
+            builder.setVibrate(longArrayOf(0))
+            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.dismiss_with_unlock), dismissPendingIntent)
         } else {
-            builder.addAction(android.R.drawable.ic_lock_silent_mode, "بی‌صدا کردن (۱ دقیقه)", mutePendingIntent)
-            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "قطع آلارم", dismissPendingIntent)
-            builder.addAction(android.R.drawable.ic_popup_sync, "تعویق (۵ دقیقه)", snoozePendingIntent)
+            builder.addAction(android.R.drawable.ic_lock_silent_mode, getString(R.string.ringing_smart_mute_title), mutePendingIntent)
+            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.dismiss), dismissPendingIntent)
+            builder.addAction(android.R.drawable.ic_popup_sync, getString(R.string.snooze), snoozePendingIntent)
         }
 
         return builder.build()
