@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Alarm Clock</string>
+    <string name="alarms_tab">آلارم‌ها</string>
+    <string name="logs_tab">لاگ و عیب‌یابی</string>
+    <string name="add_alarm">افزودن آلارم</string>
+    <string name="edit_alarm">ویرایش آلارم</string>
+    <string name="alarm_volume">میزان صدای آلارم</string>
+    <string name="gradual_volume">افزایش تدریجی صدا (Crescendo)</string>
+    <string name="gradual_volume_desc">شروع با صدای کم و افزایش ملایم در طول ۳۰ ثانیه</string>
+    <string name="smart_mute_title">حالت سکوت هوشمند (دکمه پاور)</string>
+    <string name="smart_mute_desc">امکان سایلنت با دکمه پاور؛ اگر ظرف ۱ دقیقه قفل گوشی باز نشود دوباره زنگ خواهد زد</string>
+    <string name="save">ذخیره</string>
+    <string name="cancel">انصراف</string>
+    <string name="delete">حذف</string>
+    <string name="dismiss">قطع قطعی آلارم</string>
+    <string name="snooze">تعویق (۵ دقیقه)</string>
+    <string name="smart_muted_banner">آلارم با دکمه پاور بی‌صدا شد! ۱ دقیقه مهلت دارید قفل گوشی را باز کرده و قطع کنید، وگرنه دوباره زنگ می‌زند.</string>
+</resources>

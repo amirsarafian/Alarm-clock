@@ -1,0 +1,433 @@
+package com.example
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.WarningAmber
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.model.AlarmItem
+import com.example.scheduler.AlarmScheduler
+import com.example.ui.MainViewModel
+import com.example.ui.components.AlarmCard
+import com.example.ui.components.AlarmEditDialog
+import com.example.ui.components.LogView
+import com.example.ui.theme.MyApplicationTheme
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+class MainActivity : ComponentActivity() {
+
+    private val viewModel: MainViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        setContent {
+            MyApplicationTheme {
+                val context = LocalContext.current
+
+                // Request notification permission for Android 13+
+                val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission(),
+                    onResult = {
+                        viewModel.refreshSystemReport()
+                    }
+                )
+
+                LaunchedEffect(Unit) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        if (ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                }
+
+                AlarmClockMainScreen(viewModel = viewModel)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshSystemReport()
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AlarmClockMainScreen(viewModel: MainViewModel) {
+    val alarms by viewModel.alarms.collectAsStateWithLifecycle()
+    val logs by viewModel.logs.collectAsStateWithLifecycle()
+    val systemReport by viewModel.systemReport.collectAsStateWithLifecycle()
+
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var editingAlarm by remember { mutableStateOf<AlarmItem?>(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
+
+    // Live clock in top bar
+    var currentTimeString by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        while (true) {
+            val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+            currentTimeString = sdf.format(Date())
+            delay(1000L)
+        }
+    }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth().padding(end = 12.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Alarm,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "ساعت زنگ‌دار هوشمند",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Android 16 • دقت قطعی و لاگ‌محور",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        // Digital Clock display
+                        Text(
+                            text = currentTimeString,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        floatingActionButton = {
+            if (selectedTab == 0) {
+                FloatingActionButton(
+                    onClick = { showAddDialog = true },
+                    modifier = Modifier.testTag("add_alarm_fab"),
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(18.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "افزودن آلارم")
+                }
+            }
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            // Tab Selector
+            TabRow(
+                selectedTabIndex = selectedTab,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("main_tab_row"),
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    modifier = Modifier.testTag("alarms_tab_button"),
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.Alarm, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("آلارم‌ها (${alarms.size})")
+                        }
+                    }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    modifier = Modifier.testTag("logs_tab_button"),
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(imageVector = Icons.Default.History, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("لاگ و عیب‌یابی (${logs.size})")
+                        }
+                    }
+                )
+            }
+
+            if (selectedTab == 0) {
+                AlarmsListContent(
+                    alarms = alarms,
+                    onToggle = { alarm, enabled -> viewModel.toggleAlarm(alarm, enabled) },
+                    onAlarmClick = { alarm -> editingAlarm = alarm },
+                    onDelete = { alarm -> viewModel.deleteAlarm(alarm) }
+                )
+            } else {
+                LogView(
+                    logs = logs,
+                    systemReport = systemReport,
+                    onRunAudit = { viewModel.runSystemAudit() },
+                    onClearLogs = { viewModel.clearLogs() },
+                    onTestAlarm = { viewModel.createTestAlarmInSeconds(10) }
+                )
+            }
+        }
+
+        // Add Dialog
+        if (showAddDialog) {
+            AlarmEditDialog(
+                alarm = null,
+                onDismiss = { showAddDialog = false },
+                onSave = { newAlarm ->
+                    viewModel.saveAlarm(newAlarm)
+                    showAddDialog = false
+                }
+            )
+        }
+
+        // Edit Dialog
+        if (editingAlarm != null) {
+            AlarmEditDialog(
+                alarm = editingAlarm,
+                onDismiss = { editingAlarm = null },
+                onSave = { updated ->
+                    viewModel.saveAlarm(updated)
+                    editingAlarm = null
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun AlarmsListContent(
+    alarms: List<AlarmItem>,
+    onToggle: (AlarmItem, Boolean) -> Unit,
+    onAlarmClick: (AlarmItem) -> Unit,
+    onDelete: (AlarmItem) -> Unit
+) {
+    // Calculate next alarm countdown
+    val enabledAlarms = remember(alarms) { alarms.filter { it.isEnabled } }
+    val nextAlarmInfo = remember(enabledAlarms) {
+        if (enabledAlarms.isEmpty()) null
+        else {
+            val now = System.currentTimeMillis()
+            val nextList = enabledAlarms.map {
+                it to AlarmScheduler.calculateNextTriggerTime(it)
+            }.filter { it.second > now }.sortedBy { it.second }
+            nextList.firstOrNull()
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        // Next Alarm Banner
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("next_alarm_banner"),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccessTime,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column {
+                        if (nextAlarmInfo != null) {
+                            val diffMs = nextAlarmInfo.second - System.currentTimeMillis()
+                            val hours = diffMs / (1000 * 60 * 60)
+                            val minutes = (diffMs / (1000 * 60)) % 60
+                            Text(
+                                text = "زنگ بعدی: ${nextAlarmInfo.first.label} (${nextAlarmInfo.first.getFormattedTime()})",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "حدود $hours ساعت و $minutes دقیقه دیگر به صدا درمی‌آید",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        } else {
+                            Text(
+                                text = "هیچ آلارم فعالی تنظیم نشده است",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "برای بیدارباش به موقع، یک آلارم جدید اضافه کنید",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Empty state
+        if (alarms.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 50.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Alarm,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = "لیست آلارم‌ها خالی است",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "برای افزودن ساعت بیدارباش دکمه + را لمس کنید",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
+        // List of Alarms
+        items(alarms, key = { it.id }) { alarm ->
+            AlarmCard(
+                alarm = alarm,
+                onToggle = { enabled -> onToggle(alarm, enabled) },
+                onClick = { onAlarmClick(alarm) },
+                onDelete = { onDelete(alarm) }
+            )
+        }
+    }
+}
+

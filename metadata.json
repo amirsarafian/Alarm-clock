@@ -1,0 +1,6 @@
+{
+  "name": "Alarm Clock",
+  "description": "A precision alarm clock for Android 16 with exact timing guarantees, comprehensive execution logs, smart power-button mute with unlock-to-dismiss, and gradual volume crescendo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
