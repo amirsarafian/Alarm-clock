@@ -57,7 +57,7 @@ object DiagnosticHelper {
         val maxAlarmVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
         val ringerMode = audioManager.ringerMode
 
-        val isPersian = java.util.Locale.getDefault().language == "fa"
+        val isPersian = LocaleHelper.isPersian(context)
         val issues = mutableListOf<String>()
         if (!canScheduleExact) {
             issues.add(

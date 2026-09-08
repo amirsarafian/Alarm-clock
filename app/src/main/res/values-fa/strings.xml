@@ -13,7 +13,13 @@
     <string name="gradual_volume_desc">شروع با صدای ملایم و افزایش محسوس صدا هر ۱۰ ثانیه</string>
     <string name="smart_mute_title">سکوت با پاور + الزام بازگشایی قفل</string>
     <string name="smart_mute_desc">امکان سایلنت با پاور، اما تا ۱ دقیقه باید قفل گوشی باز شود وگرنه دوباره زنگ می‌زند.</string>
-    <string name="vibrate">لرزش</string>
+    <string name="vibrate">لرزش (ویبره)</string>
+    <string name="vibrate_desc">لرزش گوشی هنگام پخش زنگ آلارم</string>
+    <string name="badge_vibrate">ویبره</string>
+    <string name="lang_title">زبان</string>
+    <string name="lang_english">English</string>
+    <string name="lang_persian">فارسی</string>
+    <string name="lang_system">پیش‌فرض سیستم</string>
     <string name="save">ذخیره آلارم</string>
     <string name="cancel">انصراف</string>
     <string name="delete">حذف</string>

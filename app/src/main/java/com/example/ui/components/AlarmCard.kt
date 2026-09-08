@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LockClock
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.model.AlarmItem
+import com.example.util.LocaleHelper
 
 @Composable
 fun AlarmCard(
@@ -48,6 +51,10 @@ fun AlarmCard(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val isPersian = LocaleHelper.isPersian(context)
+    val displayLabel = alarm.label.ifBlank { stringResource(R.string.default_alarm_label) }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -83,7 +90,7 @@ fun AlarmCard(
                         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                     )
                     Text(
-                        text = alarm.label,
+                        text = displayLabel,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
                         color = if (alarm.isEnabled) MaterialTheme.colorScheme.primary
@@ -113,7 +120,7 @@ fun AlarmCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Badges row: Days, Volume, Crescendo, Smart Mute
+            // Badges row: Days, Volume, Crescendo, Smart Mute, Vibrate
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -127,7 +134,7 @@ fun AlarmCard(
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = alarm.getDaysDescription(),
+                        text = alarm.getDaysDescription(isPersian),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -177,6 +184,31 @@ fun AlarmCard(
                                 text = stringResource(R.string.badge_gradual),
                                 fontSize = 11.sp,
                                 color = Color(0xFF00B0FF)
+                            )
+                        }
+                    }
+                }
+
+                // Vibrate badge
+                if (alarm.vibrate) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFAB47BC).copy(alpha = 0.15f))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Vibration,
+                                contentDescription = null,
+                                tint = Color(0xFFAB47BC),
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = stringResource(R.string.badge_vibrate),
+                                fontSize = 11.sp,
+                                color = Color(0xFFAB47BC)
                             )
                         }
                     }

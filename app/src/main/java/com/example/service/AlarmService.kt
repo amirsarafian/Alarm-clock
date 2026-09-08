@@ -28,6 +28,7 @@ import com.example.model.AlarmLog
 import com.example.model.LogLevel
 import com.example.receiver.AlarmReceiver
 import com.example.scheduler.AlarmScheduler
+import com.example.util.LocaleHelper
 import com.example.ui.ringing.AlarmRingingActivity
 import com.example.util.DiagnosticHelper
 import kotlinx.coroutines.CoroutineScope
@@ -139,16 +140,19 @@ class AlarmService : Service() {
 
     private fun startRinging(alarmId: Long, scheduledTime: Long) {
         serviceScope.launch(Dispatchers.IO) {
+            val isPersian = LocaleHelper.isPersian(applicationContext)
+            val defaultAlarmLabel = if (isPersian) "آلارم" else "Alarm"
             val db = AppDatabase.getDatabase(applicationContext)
             val alarm = if (alarmId > 0) db.alarmDao().getAlarmById(alarmId) else null
             val resolvedAlarm = alarm ?: AlarmItem(
                 id = if (alarmId > 0) alarmId else 1L,
                 hour = 0,
                 minute = 0,
-                label = "آلارم بیدارباش",
+                label = defaultAlarmLabel,
                 volume = 85,
                 isGradualVolume = true,
-                isSmartMuteEnabled = true
+                isSmartMuteEnabled = true,
+                vibrate = false
             )
 
             currentAlarm = resolvedAlarm
@@ -159,20 +163,33 @@ class AlarmService : Service() {
             val report = DiagnosticHelper.checkSystemStatus(applicationContext)
             val isSevereDelay = delayMs > 5000L
             val delaySeconds = delayMs / 1000.0
+            val logLabel = resolvedAlarm.label.ifBlank { defaultAlarmLabel }
 
             val logMsg = if (scheduledTime > 0) {
                 if (isSevereDelay) {
-                    "هشدار: آلارم «${resolvedAlarm.label}» با تاخیر %.1f ثانیه‌ای به صدا درآمد! دلایل احتمالی: محدودیت باتری یا خواب عمیق سیستم.".format(delaySeconds)
+                    if (isPersian) {
+                        "هشدار: آلارم «$logLabel» با تاخیر %.1f ثانیه‌ای به صدا درآمد! دلایل احتمالی: محدودیت باتری یا خواب عمیق سیستم.".format(delaySeconds)
+                    } else {
+                        "Warning: Alarm \"$logLabel\" rang with %.1f sec delay! Possible reasons: battery optimization or deep sleep.".format(delaySeconds)
+                    }
                 } else {
-                    "آلارم «${resolvedAlarm.label}» با موفقیت و در زمان دقیق به صدا درآمد. (اختلاف زمان: ${delayMs} میلی‌ثانیه)"
+                    if (isPersian) {
+                        "آلارم «$logLabel» با موفقیت و در زمان دقیق به صدا درآمد. (اختلاف زمان: ${delayMs} میلی‌ثانیه)"
+                    } else {
+                        "Alarm \"$logLabel\" triggered accurately on time. (Delta: ${delayMs} ms)"
+                    }
                 }
             } else {
-                "آلارم «${resolvedAlarm.label}» به صدا درآمد."
+                if (isPersian) {
+                    "آلارم «$logLabel» به صدا درآمد."
+                } else {
+                    "Alarm \"$logLabel\" started ringing."
+                }
             }
 
             val log = AlarmLog(
                 alarmId = resolvedAlarm.id,
-                alarmLabel = resolvedAlarm.label,
+                alarmLabel = logLabel,
                 timestamp = actualTime,
                 eventType = if (isSevereDelay) "DELAY_WARNING" else "TRIGGERED",
                 scheduledTime = scheduledTime,
@@ -449,14 +466,17 @@ class AlarmService : Service() {
     private fun handleSnooze() {
         val alarm = currentAlarm ?: return
         serviceScope.launch(Dispatchers.IO) {
+            val isPersian = LocaleHelper.isPersian(applicationContext)
             val db = AppDatabase.getDatabase(applicationContext)
+            val alarmLabel = alarm.label.ifBlank { if (isPersian) "آلارم" else "Alarm" }
             val log = AlarmLog(
                 alarmId = alarm.id,
-                alarmLabel = alarm.label,
+                alarmLabel = alarmLabel,
                 timestamp = System.currentTimeMillis(),
                 eventType = "SNOOZED",
                 level = LogLevel.INFO,
-                message = "آلارم «${alarm.label}» برای ۵ دقیقه به تعویق افتاد (Snooze)."
+                message = if (isPersian) "آلارم «$alarmLabel» برای ۵ دقیقه به تعویق افتاد (Snooze)."
+                          else "Alarm \"$alarmLabel\" snoozed for 5 minutes."
             )
             db.alarmLogDao().insertLog(log)
 
@@ -603,13 +623,13 @@ class AlarmService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setAutoCancel(false)
+            .setVibrate(longArrayOf(0))
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setContentIntent(fullScreenPendingIntent)
 
         if (isMuted) {
             builder.setSilent(true)
             builder.setOnlyAlertOnce(true)
-            builder.setVibrate(longArrayOf(0))
             builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.dismiss_with_unlock), dismissPendingIntent)
         } else {
             builder.addAction(android.R.drawable.ic_lock_silent_mode, getString(R.string.ringing_smart_mute_title), mutePendingIntent)

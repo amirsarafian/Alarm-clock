@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
@@ -35,8 +36,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.CheckCircle
@@ -57,6 +60,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +72,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -79,12 +85,18 @@ import com.example.R
 import com.example.receiver.AlarmReceiver
 import com.example.service.AlarmService
 import com.example.ui.theme.MyApplicationTheme
+import com.example.util.LocaleHelper
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class AlarmRingingActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val locale = LocaleHelper.getActiveLocale(newBase)
+        super.attachBaseContext(LocaleHelper.createLocalizedContext(newBase, locale))
+    }
 
     private val confirmCredentialLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -259,7 +271,7 @@ fun RingingScreenContent(
     val isMuted = state?.isMuted == true
     val remainingSeconds = state?.muteRemainingSeconds ?: 60
     val volumePercent = state?.currentVolumePercent ?: 0
-    val isPersian = Locale.getDefault().language == "fa"
+    val isPersian = LocaleHelper.isPersian(LocalContext.current)
     val defaultLabel = stringResource(R.string.app_name)
     val alarmLabel = state?.alarm?.label?.ifEmpty { defaultLabel } ?: defaultLabel
 
@@ -279,7 +291,8 @@ fun RingingScreenContent(
             .fillMaxSize()
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 20.dp),
+            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 24.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -307,12 +320,12 @@ fun RingingScreenContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Big Clock Display
             Text(
                 text = currentTimeString.ifEmpty { "00:00" },
-                fontSize = 76.sp,
+                fontSize = 64.sp,
                 fontWeight = FontWeight.Light,
                 letterSpacing = (-2).sp,
                 color = Color.White
@@ -320,7 +333,7 @@ fun RingingScreenContent(
 
             Text(
                 text = alarmLabel,
-                fontSize = 24.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color(0xFFE0E0E0),
                 modifier = Modifier.padding(top = 4.dp)
@@ -328,7 +341,7 @@ fun RingingScreenContent(
 
             // Volume Indicator (Crescendo feedback)
             if (!isMuted) {
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
@@ -421,7 +434,7 @@ fun RingingScreenContent(
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .size(170.dp)
+                        .size(130.dp)
                         .scale(pulseScale)
                         .clip(CircleShape)
                         .background(
@@ -439,7 +452,7 @@ fun RingingScreenContent(
                         imageVector = Icons.Default.NotificationsActive,
                         contentDescription = null,
                         tint = Color(0xFF00E5FF),
-                        modifier = Modifier.size(70.dp)
+                        modifier = Modifier.size(54.dp)
                     )
                 }
             }

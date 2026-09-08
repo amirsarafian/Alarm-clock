@@ -9,7 +9,7 @@ data class AlarmItem(
     val id: Long = 0,
     val hour: Int,
     val minute: Int,
-    val label: String = "آلارم",
+    val label: String = "",
     val isEnabled: Boolean = true,
     // Days of week (1 = Monday, ..., 7 = Sunday). Empty list means one-time alarm.
     val daysOfWeek: List<Int> = emptyList(),
@@ -20,7 +20,7 @@ data class AlarmItem(
     val gradualDurationSeconds: Int = 30,
     // Smart Mute via power button: silences sound immediately, but requires unlocking phone within 1 minute
     val isSmartMuteEnabled: Boolean = true,
-    val vibrate: Boolean = true,
+    val vibrate: Boolean = false,
     val ringtoneUri: String = ""
 ) {
     fun getFormattedTime(): String {
@@ -29,8 +29,7 @@ data class AlarmItem(
         return "$h:$m"
     }
 
-    fun getDaysDescription(): String {
-        val isPersian = java.util.Locale.getDefault().language == "fa"
+    fun getDaysDescription(isPersian: Boolean = java.util.Locale.getDefault().language == "fa"): String {
         if (daysOfWeek.isEmpty()) return if (isPersian) "یک‌بار" else "Once"
         if (daysOfWeek.size == 7) return if (isPersian) "هر روز" else "Every day"
         if (daysOfWeek.containsAll(listOf(6, 7)) && daysOfWeek.size == 2) {

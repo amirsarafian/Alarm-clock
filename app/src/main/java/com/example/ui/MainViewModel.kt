@@ -107,9 +107,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 LogLevel.WARNING
             }
 
+            val isPersian = com.example.util.LocaleHelper.isPersian(getApplication())
             val log = AlarmLog(
                 alarmId = 0L,
-                alarmLabel = "بررسی سلامت سیستم",
+                alarmLabel = if (isPersian) "بررسی سلامت سیستم" else "System Health Audit",
                 timestamp = System.currentTimeMillis(),
                 eventType = "SYSTEM_AUDIT",
                 level = level,
@@ -122,19 +123,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun createTestAlarmInSeconds(seconds: Int = 10) {
         viewModelScope.launch {
+            val isPersian = com.example.util.LocaleHelper.isPersian(getApplication())
             val cal = Calendar.getInstance().apply {
                 add(Calendar.SECOND, seconds)
             }
             val testAlarm = AlarmItem(
                 hour = cal.get(Calendar.HOUR_OF_DAY),
                 minute = cal.get(Calendar.MINUTE),
-                label = "تست زنگ دقیق ($seconds ثانیه دیگر)",
+                label = if (isPersian) "تست زنگ دقیق ($seconds ثانیه دیگر)" else "Test Alarm (in $seconds sec)",
                 isEnabled = true,
                 daysOfWeek = emptyList(),
                 volume = 80,
                 isGradualVolume = true,
                 gradualDurationSeconds = 15,
-                isSmartMuteEnabled = true
+                isSmartMuteEnabled = true,
+                vibrate = false
             )
             val id = repository.insertAlarm(testAlarm)
             AlarmScheduler.scheduleAlarm(getApplication(), testAlarm.copy(id = id))

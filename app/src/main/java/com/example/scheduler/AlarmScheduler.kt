@@ -11,6 +11,7 @@ import com.example.model.AlarmLog
 import com.example.model.LogLevel
 import com.example.receiver.AlarmReceiver
 import com.example.util.DiagnosticHelper
+import com.example.util.LocaleHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -62,10 +63,13 @@ object AlarmScheduler {
                 val sdf = SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault())
                 val formattedTime = sdf.format(Date(triggerTime))
 
-                val msg = "آلارم برای زمان دقیق $formattedTime تنظیم شد. (سیستم ساعت دقیق AlarmClockInfo اختصاص داده شد)"
+                val isPersian = LocaleHelper.isPersian(context)
+                val alarmLabel = alarm.label.ifBlank { if (isPersian) "آلارم" else "Alarm" }
+                val msg = if (isPersian) "آلارم «$alarmLabel» برای زمان دقیق $formattedTime تنظیم شد. (سیستم ساعت دقیق AlarmClockInfo اختصاص داده شد)"
+                          else "Alarm \"$alarmLabel\" scheduled accurately for $formattedTime via AlarmClockInfo."
                 val log = AlarmLog(
                     alarmId = alarm.id,
-                    alarmLabel = alarm.label,
+                    alarmLabel = alarmLabel,
                     timestamp = System.currentTimeMillis(),
                     eventType = "SCHEDULED",
                     scheduledTime = triggerTime,
@@ -98,13 +102,16 @@ object AlarmScheduler {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val db = AppDatabase.getDatabase(context)
+                val isPersian = LocaleHelper.isPersian(context)
+                val alarmLabel = alarm.label.ifBlank { if (isPersian) "آلارم" else "Alarm" }
                 val log = AlarmLog(
                     alarmId = alarm.id,
-                    alarmLabel = alarm.label,
+                    alarmLabel = alarmLabel,
                     timestamp = System.currentTimeMillis(),
                     eventType = "CANCELED",
                     level = LogLevel.INFO,
-                    message = "آلارم «${alarm.label}» توسط کاربر لغو یا غیرفعال شد."
+                    message = if (isPersian) "آلارم «$alarmLabel» توسط کاربر لغو یا غیرفعال شد."
+                              else "Alarm \"$alarmLabel\" canceled or disabled by user."
                 )
                 db.alarmLogDao().insertLog(log)
             } catch (e: Exception) {

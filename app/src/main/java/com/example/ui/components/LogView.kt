@@ -74,7 +74,7 @@ fun LogView(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val isPersian = Locale.getDefault().language == "fa"
+    val isPersian = com.example.util.LocaleHelper.isPersian(context)
     var selectedFilter by remember { mutableStateOf("ALL") }
 
     val filteredLogs = remember(logs, selectedFilter) {
@@ -237,7 +237,8 @@ fun SystemHealthCard(
     onFixNotification: () -> Unit
 ) {
     val isAllGood = report.canScheduleExactAlarms && report.isBatteryOptimizationIgnored && report.areNotificationsEnabled
-    val isPersian = Locale.getDefault().language == "fa"
+    val context = LocalContext.current
+    val isPersian = com.example.util.LocaleHelper.isPersian(context)
 
     Card(
         modifier = Modifier
@@ -368,7 +369,8 @@ private fun DiagnosticRow(
 @Composable
 fun LogItemCard(log: AlarmLog) {
     var isExpanded by remember { mutableStateOf(false) }
-    val isPersian = Locale.getDefault().language == "fa"
+    val context = LocalContext.current
+    val isPersian = com.example.util.LocaleHelper.isPersian(context)
 
     val (badgeColor, badgeText) = when (log.eventType) {
         "TRIGGERED" -> Color(0xFF00E676) to (if (isPersian) "زنگ سر وقت" else "Triggered On Time")

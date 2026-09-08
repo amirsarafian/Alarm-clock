@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.LockClock
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -74,13 +75,14 @@ fun AlarmEditDialog(
         is24Hour = true
     )
 
-    val isPersian = Locale.getDefault().language == "fa"
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val isPersian = com.example.util.LocaleHelper.isPersian(context)
     val defaultLabel = stringResource(R.string.default_alarm_label)
-    var label by remember { mutableStateOf(alarm?.label ?: defaultLabel) }
+    var label by remember { mutableStateOf(alarm?.label ?: "") }
     var volume by remember { mutableIntStateOf(alarm?.volume ?: 85) }
     var isGradualVolume by remember { mutableStateOf(alarm?.isGradualVolume ?: true) }
     var isSmartMuteEnabled by remember { mutableStateOf(alarm?.isSmartMuteEnabled ?: true) }
-    var vibrate by remember { mutableStateOf(alarm?.vibrate ?: true) }
+    var vibrate by remember { mutableStateOf(alarm?.vibrate ?: false) }
 
     val selectedDays = remember {
         mutableStateListOf<Int>().apply {
@@ -145,6 +147,7 @@ fun AlarmEditDialog(
                     value = label,
                     onValueChange = { label = it },
                     label = { Text(stringResource(R.string.alarm_label)) },
+                    placeholder = { Text(defaultLabel) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -328,6 +331,53 @@ fun AlarmEditDialog(
                         )
                     }
                 }
+
+                // Vibration Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Vibration,
+                                contentDescription = null,
+                                tint = Color(0xFFAB47BC),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = stringResource(R.string.vibrate),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = stringResource(R.string.vibrate_desc),
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = vibrate,
+                            onCheckedChange = { vibrate = it },
+                            modifier = Modifier.testTag("vibrate_switch")
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
@@ -337,7 +387,7 @@ fun AlarmEditDialog(
                         id = alarm?.id ?: 0L,
                         hour = timePickerState.hour,
                         minute = timePickerState.minute,
-                        label = label.ifBlank { defaultLabel },
+                        label = label.trim(),
                         isEnabled = true,
                         daysOfWeek = selectedDays.toList(),
                         volume = volume,

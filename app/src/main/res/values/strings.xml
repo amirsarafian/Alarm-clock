@@ -14,6 +14,12 @@
     <string name="smart_mute_title">Power Button Mute + Unlock Required</string>
     <string name="smart_mute_desc">Mute sound with power button, but you must unlock phone within 1 minute or it rings loudly again.</string>
     <string name="vibrate">Vibrate</string>
+    <string name="vibrate_desc">Vibrate phone when alarm starts ringing</string>
+    <string name="badge_vibrate">Vibrate</string>
+    <string name="lang_title">Language</string>
+    <string name="lang_english">English</string>
+    <string name="lang_persian">فارسی</string>
+    <string name="lang_system">System Default</string>
     <string name="save">Save Alarm</string>
     <string name="cancel">Cancel</string>
     <string name="delete">Delete</string>

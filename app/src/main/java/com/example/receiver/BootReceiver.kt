@@ -29,13 +29,15 @@ class BootReceiver : BroadcastReceiver() {
                         AlarmScheduler.scheduleAlarm(context, alarm)
                     }
 
+                    val isPersian = com.example.util.LocaleHelper.isPersian(context)
                     val log = AlarmLog(
                         alarmId = 0L,
-                        alarmLabel = "سیستم",
+                        alarmLabel = if (isPersian) "سیستم" else "System",
                         timestamp = System.currentTimeMillis(),
                         eventType = "REBOOT_RESTORED",
                         level = LogLevel.SUCCESS,
-                        message = "دستگاه راه‌اندازی مجدد شد؛ تعداد ${enabledAlarms.size} آلارم فعال مجدداً با بالاترین دقت زمان‌بندی شدند.",
+                        message = if (isPersian) "دستگاه راه‌اندازی مجدد شد؛ تعداد ${enabledAlarms.size} آلارم فعال مجدداً با بالاترین دقت زمان‌بندی شدند."
+                                  else "Device rebooted; restored and scheduled ${enabledAlarms.size} active alarms with high precision.",
                         technicalReason = "Broadcast action: $action"
                     )
                     db.alarmLogDao().insertLog(log)

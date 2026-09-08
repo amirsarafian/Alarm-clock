@@ -11,7 +11,7 @@ class AlarmApplication : Application() {
 
     companion object {
         const val ALARM_CHANNEL_ID = "alarm_clock_channel_high_priority"
-        const val ALARM_CHANNEL_NAME = "هشدارهای آلارم ساعت"
+        const val ALARM_CHANNEL_NAME = "Alarm Clock Alerts"
     }
 
     override fun onCreate() {
@@ -33,10 +33,10 @@ class AlarmApplication : Application() {
                 ALARM_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "کانال هشدارهای دقیق آلارم با اولویت بالا و تمام صفحه"
+                description = "High-priority alarm alerts and full-screen notifications"
                 setSound(soundUri, audioAttributes)
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 800, 400, 800, 400)
+                enableVibration(false)
+                vibrationPattern = null
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
                 setBypassDnd(true)
             }
