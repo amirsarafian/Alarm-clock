@@ -123,7 +123,7 @@ class AlarmService : Service() {
         instance = this
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(
-            PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+            PowerManager.PARTIAL_WAKE_LOCK,
             "AlarmClock:AlarmServiceWakeLock"
         ).apply {
             setReferenceCounted(false)
@@ -245,6 +245,20 @@ class AlarmService : Service() {
                 val notification = buildForegroundNotification(resolvedAlarm, false, 0)
                 startForeground(NOTIFICATION_ID, notification)
                 updateState()
+
+                // Launch AlarmRingingActivity full screen
+                val ringingIntent = Intent(applicationContext, AlarmRingingActivity::class.java).apply {
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    )
+                }
+                try {
+                    startActivity(ringingIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }

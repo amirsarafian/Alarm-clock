@@ -211,18 +211,59 @@ class AlarmRingingActivity : ComponentActivity() {
         }
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.keyCode == KeyEvent.KEYCODE_POWER) {
-            triggerInstantPowerMute()
-            return super.dispatchKeyEvent(event)
-        }
-        if (event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || event.keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-            if (event.action == KeyEvent.ACTION_DOWN) {
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        when (keyCode) {
+            KeyEvent.KEYCODE_POWER,
+            KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_VOLUME_UP,
+            KeyEvent.KEYCODE_CAMERA,
+            KeyEvent.KEYCODE_HEADSETHOOK -> {
                 triggerInstantPowerMute()
+                if (keyCode != KeyEvent.KEYCODE_POWER) {
+                    return true
+                }
             }
-            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        when (keyCode) {
+            KeyEvent.KEYCODE_POWER,
+            KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_VOLUME_UP,
+            KeyEvent.KEYCODE_CAMERA,
+            KeyEvent.KEYCODE_HEADSETHOOK -> {
+                triggerInstantPowerMute()
+                if (keyCode != KeyEvent.KEYCODE_POWER) {
+                    return true
+                }
+            }
+        }
+        return super.onKeyUp(keyCode, event)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_POWER,
+            KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_VOLUME_UP,
+            KeyEvent.KEYCODE_CAMERA,
+            KeyEvent.KEYCODE_HEADSETHOOK -> {
+                triggerInstantPowerMute()
+                if (event.keyCode != KeyEvent.KEYCODE_POWER) {
+                    return true
+                }
+            }
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (!isLaunchingAuth) {
+            triggerInstantPowerMute()
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -551,7 +592,7 @@ fun RingingScreenContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (isPersian) "بی‌صدا کردن موقت (دکمه پاور)" else "Mute temporarily (Power button)",
+                        text = if (isPersian) "بی‌صدا کردن (دکمه پاور یا ولوم)" else "Mute (Power or Volume)",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
