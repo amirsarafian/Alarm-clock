@@ -10,7 +10,7 @@ import android.os.Build
 class AlarmApplication : Application() {
 
     companion object {
-        const val ALARM_CHANNEL_ID = "alarm_clock_channel_high_priority"
+        const val ALARM_CHANNEL_ID = "alarm_clock_channel_v2"
         const val ALARM_CHANNEL_NAME = "Alarm Clock Alerts"
     }
 
@@ -21,20 +21,13 @@ class AlarmApplication : Application() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val audioAttributes = AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .build()
-
-            val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-
             val channel = NotificationChannel(
                 ALARM_CHANNEL_ID,
                 ALARM_CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "High-priority alarm alerts and full-screen notifications"
-                setSound(soundUri, audioAttributes)
+                setSound(null, null)
                 enableVibration(false)
                 vibrationPattern = null
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC

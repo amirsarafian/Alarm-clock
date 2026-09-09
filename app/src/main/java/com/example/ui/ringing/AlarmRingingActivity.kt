@@ -2,8 +2,10 @@ package com.example.ui.ringing
 
 import android.app.Activity
 import android.app.KeyguardManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -99,6 +101,15 @@ class AlarmRingingActivity : ComponentActivity() {
     }
 
     private var isLaunchingAuth = false
+    private var isScreenOffReceiverRegistered = false
+
+    private val screenOffReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action == Intent.ACTION_SCREEN_OFF) {
+                triggerInstantPowerMute()
+            }
+        }
+    }
 
     private val confirmCredentialLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -121,6 +132,10 @@ class AlarmRingingActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setupLockscreenWake()
+
+        val filter = IntentFilter(Intent.ACTION_SCREEN_OFF)
+        registerReceiver(screenOffReceiver, filter)
+        isScreenOffReceiverRegistered = true
 
         if (intent?.getBooleanExtra("REQUEST_UNLOCK_CHALLENGE", false) == true) {
             attemptDismissWithUnlock()
@@ -181,25 +196,24 @@ class AlarmRingingActivity : ComponentActivity() {
             @Suppress("DEPRECATION")
             window.addFlags(
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
             )
         }
     }
 
     private fun triggerInstantPowerMute() {
-        val state = AlarmService.currentAlarmState.value
-        if (state != null && !state.isMuted && !isFinishing && !isDestroyed) {
+        if (isLaunchingAuth || isFinishing || isDestroyed) return
+        if (!AlarmService.isCurrentlyMuted()) {
             AlarmService.muteImmediately(this)
-            Toast.makeText(this, getString(R.string.smart_muted_banner), Toast.LENGTH_SHORT).show()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                setTurnScreenOn(false)
+            }
         }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.keyCode == KeyEvent.KEYCODE_POWER) {
-            if (event.action == KeyEvent.ACTION_DOWN) {
-                triggerInstantPowerMute()
-            }
+            triggerInstantPowerMute()
             return super.dispatchKeyEvent(event)
         }
         if (event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || event.keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
@@ -220,6 +234,13 @@ class AlarmRingingActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+        if (!isLaunchingAuth) {
+            triggerInstantPowerMute()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
         if (!isLaunchingAuth) {
             triggerInstantPowerMute()
         }
@@ -278,6 +299,18 @@ class AlarmRingingActivity : ComponentActivity() {
             action = AlarmReceiver.ACTION_DISMISS_ALARM
         }
         sendBroadcast(dismissIntent)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isScreenOffReceiverRegistered) {
+            try {
+                unregisterReceiver(screenOffReceiver)
+            } catch (e: Exception) {
+                // ignore
+            }
+            isScreenOffReceiverRegistered = false
+        }
     }
 }
 

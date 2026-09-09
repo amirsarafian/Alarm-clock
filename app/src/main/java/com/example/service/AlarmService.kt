@@ -53,12 +53,16 @@ class AlarmService : Service() {
         @Volatile
         private var instance: AlarmService? = null
 
+        fun isCurrentlyMuted(): Boolean {
+            return instance?.isMuted == true
+        }
+
         fun muteImmediately(context: Context) {
             val service = instance
             if (service != null) {
-                service.serviceScope.launch(Dispatchers.Main) {
-                    service.handlePowerButtonMute()
-                }
+                // Instantly and synchronously silence audio & vibration on the current thread
+                service.silenceAudioImmediately()
+                service.handlePowerButtonMute()
             } else {
                 val intent = Intent(context, AlarmService::class.java).apply {
                     action = AlarmReceiver.ACTION_MUTE_ALARM
@@ -332,33 +336,45 @@ class AlarmService : Service() {
     }
 
     /**
-     * Requirement 6:
-     * When user presses Power button / Screen Off, mute alarm sound immediately to avoid disturbing others.
-     * Starts a 60-second timer during which the user must unlock phone to permanently dismiss.
-     * If 60 seconds expire and phone has not been unlocked, resumes sound at full volume!
+     * Synchronously and immediately silences audio and vibration.
+     * Can be called from any thread without waiting for coroutines.
      */
-    private fun handlePowerButtonMute() {
-        val alarm = currentAlarm ?: return
-        if (!alarm.isSmartMuteEnabled) return
-
-        if (isMuted) return // already in mute countdown
-
+    fun silenceAudioImmediately() {
         isMuted = true
         gradualVolumeJob?.cancel()
-
-        // Silence audio & stop vibration immediately
         try {
             mediaPlayer?.setVolume(0f, 0f)
             mediaPlayer?.pause()
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        stopVibration()
+        try {
+            vibrator?.cancel()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * Requirement 6:
+     * When user presses Power button / Screen Off, mute alarm sound immediately to avoid disturbing others.
+     * Starts a 60-second timer during which the user must unlock phone to permanently dismiss.
+     * If 60 seconds expire and phone has not been unlocked, resumes sound at full volume!
+     */
+    private fun handlePowerButtonMute() {
+        silenceAudioImmediately()
+
+        val alarm = currentAlarm ?: return
+        if (!alarm.isSmartMuteEnabled) return
+
+        if (smartMuteJob?.isActive == true && remainingMuteSeconds > 0) {
+            return // already in mute countdown
+        }
 
         remainingMuteSeconds = 60
         updateState()
 
-        // Post silent notification with mute message once (no vibration, no sound alerts)
+        // Post silent notification with mute message once (no vibration, no sound alerts, NO fullScreenIntent)
         val notification = buildForegroundNotification(alarm, isMuted = true, remainingSeconds = 60)
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         nm.notify(NOTIFICATION_ID, notification)
@@ -375,7 +391,7 @@ class AlarmService : Service() {
                 level = LogLevel.WARNING,
                 message = if (isPersian) "آلارم با دکمه پاور بی‌صدا شد. کاربر ۱ دقیقه فرصت دارد قفل گوشی را باز کند."
                           else "Alarm silenced with power button. User has 1 minute to unlock device.",
-                technicalReason = "ACTION_SCREEN_OFF detected. Smart mute 60s countdown engaged."
+                technicalReason = "Power button / Screen off detected. Audio silenced immediately. 60s countdown engaged."
             )
             db.alarmLogDao().insertLog(log)
         }
@@ -658,20 +674,23 @@ class AlarmService : Service() {
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(title)
             .setContentText(content)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(true)
             .setAutoCancel(false)
-            .setVibrate(longArrayOf(0))
-            .setFullScreenIntent(fullScreenPendingIntent, true)
             .setContentIntent(fullScreenPendingIntent)
 
         if (isMuted) {
+            builder.setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            builder.setCategory(NotificationCompat.CATEGORY_STATUS)
             builder.setSilent(true)
             builder.setOnlyAlertOnce(true)
+            // CRITICAL: DO NOT setFullScreenIntent when muted, so screen is allowed to turn off and stay off!
             builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.dismiss_with_unlock), dismissPendingIntent)
         } else {
+            builder.setPriority(NotificationCompat.PRIORITY_MAX)
+            builder.setCategory(NotificationCompat.CATEGORY_ALARM)
+            builder.setVibrate(longArrayOf(0))
+            builder.setFullScreenIntent(fullScreenPendingIntent, true)
             builder.addAction(android.R.drawable.ic_lock_silent_mode, getString(R.string.ringing_smart_mute_title), mutePendingIntent)
             builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.dismiss), dismissPendingIntent)
             builder.addAction(android.R.drawable.ic_popup_sync, getString(R.string.snooze), snoozePendingIntent)
