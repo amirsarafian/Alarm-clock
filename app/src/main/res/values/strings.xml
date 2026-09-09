@@ -69,7 +69,7 @@
     <string name="badge_reboot">Reboot Restored</string>
 
     <string name="badge_gradual">Crescendo</string>
-    <string name="badge_lock_1min">Unlock 1m</string>
+    <string name="badge_lock_1min">Unlock</string>
     <string name="one_time">Once</string>
     <string name="every_day">Every day</string>
     <string name="weekends">Weekends</string>

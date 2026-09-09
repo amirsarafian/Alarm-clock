@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +58,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.AlarmLog
@@ -146,7 +149,9 @@ fun LogView(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isPersian) "تست زنگ (۱۰ ثانیه)" else "Test Alarm (10s)",
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
 
@@ -163,7 +168,9 @@ fun LogView(
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = if (isPersian) "پاکسازی" else "Clear Logs",
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -172,28 +179,58 @@ fun LogView(
         // Filter chips
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 FilterChip(
                     selected = selectedFilter == "ALL",
                     onClick = { selectedFilter = "ALL" },
-                    label = { Text(if (isPersian) "همه (${logs.size})" else "All (${logs.size})", fontSize = 11.sp) }
+                    label = {
+                        Text(
+                            text = if (isPersian) "همه (${logs.size})" else "All (${logs.size})",
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 )
                 FilterChip(
                     selected = selectedFilter == "WARNINGS",
                     onClick = { selectedFilter = "WARNINGS" },
-                    label = { Text(if (isPersian) "خطاها" else "Warnings", fontSize = 11.sp) }
+                    label = {
+                        Text(
+                            text = if (isPersian) "خطاها" else "Warnings",
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 )
                 FilterChip(
                     selected = selectedFilter == "DISMISS",
                     onClick = { selectedFilter = "DISMISS" },
-                    label = { Text(if (isPersian) "قطع شدن" else "Dismissals", fontSize = 11.sp) }
+                    label = {
+                        Text(
+                            text = if (isPersian) "قطع شدن" else "Dismissals",
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 )
                 FilterChip(
                     selected = selectedFilter == "MUTE",
                     onClick = { selectedFilter = "MUTE" },
-                    label = { Text(if (isPersian) "سکوت هوشمند" else "Smart Mute", fontSize = 11.sp) }
+                    label = {
+                        Text(
+                            text = "Smart Mute",
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 )
             }
         }
@@ -349,7 +386,10 @@ private fun DiagnosticRow(
             Text(
                 text = title,
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.9f)
+                color = Color.White.copy(alpha = 0.9f),
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
@@ -375,7 +415,7 @@ fun LogItemCard(log: AlarmLog) {
     val (badgeColor, badgeText) = when (log.eventType) {
         "TRIGGERED" -> Color(0xFF00E676) to (if (isPersian) "زنگ سر وقت" else "Triggered On Time")
         "DELAY_WARNING" -> Color(0xFFFF5252) to (if (isPersian) "هشدار تاخیر" else "Delay Warning")
-        "MUTED_POWER_BUTTON" -> Color(0xFFFFAB00) to (if (isPersian) "سکوت دکمه پاور" else "Muted (Power)")
+        "MUTED_POWER_BUTTON" -> Color(0xFFFFAB00) to "Smart Mute"
         "DISMISSED_UNLOCKED" -> Color(0xFF00E5FF) to (if (isPersian) "قطع با بازگشایی قفل" else "Dismissed (Unlocked)")
         "RESUMED_UNANSWERED" -> Color(0xFFFF1744) to (if (isPersian) "زنگ مجدد (عدم بازگشایی)" else "Resumed Loud")
         "SNOOZED" -> Color(0xFF90CAF9) to (if (isPersian) "تعویق (Snooze)" else "Snoozed")
@@ -413,7 +453,9 @@ fun LogItemCard(log: AlarmLog) {
                         text = badgeText,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = badgeColor
+                        color = badgeColor,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
 

@@ -18,8 +18,7 @@ object LocaleHelper {
     const val LANG_PERSIAN = "fa"
 
     fun getSelectedLanguage(context: Context): String {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_LANGUAGE, LANG_SYSTEM) ?: LANG_SYSTEM
+        return LANG_SYSTEM
     }
 
     fun setSelectedLanguage(context: Context, lang: String) {
@@ -28,28 +27,16 @@ object LocaleHelper {
     }
 
     fun isPersian(context: Context): Boolean {
-        return when (getSelectedLanguage(context)) {
-            LANG_PERSIAN -> true
-            LANG_ENGLISH -> false
-            else -> {
-                val sysLang = Locale.getDefault().language.lowercase()
-                sysLang.startsWith("fa") || sysLang == "pes" || sysLang == "fas"
-            }
-        }
+        val sysLang = Locale.getDefault().language.lowercase()
+        return sysLang.startsWith("fa") || sysLang == "pes" || sysLang == "fas"
     }
 
     fun getActiveLocale(context: Context): Locale {
-        return when (getSelectedLanguage(context)) {
-            LANG_PERSIAN -> Locale("fa")
-            LANG_ENGLISH -> Locale("en")
-            else -> {
-                val sysLang = Locale.getDefault().language.lowercase()
-                if (sysLang.startsWith("fa") || sysLang == "pes" || sysLang == "fas") {
-                    Locale("fa")
-                } else {
-                    Locale.getDefault()
-                }
-            }
+        val sysLang = Locale.getDefault().language.lowercase()
+        return if (sysLang.startsWith("fa") || sysLang == "pes" || sysLang == "fas") {
+            Locale("fa")
+        } else {
+            Locale.getDefault()
         }
     }
 

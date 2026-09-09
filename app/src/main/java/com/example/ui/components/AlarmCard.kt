@@ -123,15 +123,15 @@ fun AlarmCard(
             // Badges row: Days, Volume, Crescendo, Smart Mute, Vibrate
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Days badge
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(6.dp))
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
                 ) {
                     Text(
                         text = alarm.getDaysDescription(isPersian),
@@ -143,9 +143,9 @@ fun AlarmCard(
                 // Volume badge
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(6.dp))
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
@@ -154,7 +154,7 @@ fun AlarmCard(
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(12.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
                         Text(
                             text = "${alarm.volume}%",
                             fontSize = 11.sp,
@@ -168,9 +168,9 @@ fun AlarmCard(
                 if (alarm.isGradualVolume) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(6.dp))
                             .background(Color(0xFF00B0FF).copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 6.dp, vertical = 3.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -179,7 +179,7 @@ fun AlarmCard(
                                 tint = Color(0xFF00B0FF),
                                 modifier = Modifier.size(12.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 text = stringResource(R.string.badge_gradual),
                                 fontSize = 11.sp,
@@ -193,9 +193,9 @@ fun AlarmCard(
                 if (alarm.vibrate) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(6.dp))
                             .background(Color(0xFFAB47BC).copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 6.dp, vertical = 3.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -204,7 +204,7 @@ fun AlarmCard(
                                 tint = Color(0xFFAB47BC),
                                 modifier = Modifier.size(12.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 text = stringResource(R.string.badge_vibrate),
                                 fontSize = 11.sp,
@@ -218,9 +218,9 @@ fun AlarmCard(
                 if (alarm.isSmartMuteEnabled) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(6.dp))
                             .background(Color(0xFFFF9100).copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 6.dp, vertical = 3.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -229,7 +229,7 @@ fun AlarmCard(
                                 tint = Color(0xFFFF9100),
                                 modifier = Modifier.size(12.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 text = stringResource(R.string.badge_lock_1min),
                                 fontSize = 11.sp,

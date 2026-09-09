@@ -40,7 +40,7 @@
     <string name="filter_all">همه (%1$d)</string>
     <string name="filter_warnings">خطاها و تاخیرها</string>
     <string name="filter_dismiss">قطع شدن</string>
-    <string name="filter_mute">سکوت هوشمند</string>
+    <string name="filter_mute">Smart Mute</string>
     <string name="empty_logs_text">هنوز لاگی ثبت نشده است.\nرویدادهای زنگ، قطع شدن، سکوت و تست سلامت در اینجا نمایش داده می‌شوند.</string>
 
     <string name="system_health_ok">وضعیت سیستم: آماده و بدون مانع</string>
@@ -69,7 +69,7 @@
     <string name="badge_reboot">بازیابی پس از ریبوت</string>
 
     <string name="badge_gradual">تدریجی</string>
-    <string name="badge_lock_1min">قفل ۱ دقیقه</string>
+    <string name="badge_lock_1min">Unlock</string>
     <string name="one_time">یک‌بار</string>
     <string name="every_day">هر روز</string>
     <string name="weekends">آخر هفته</string>

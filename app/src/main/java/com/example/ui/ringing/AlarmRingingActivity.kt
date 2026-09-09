@@ -98,9 +98,12 @@ class AlarmRingingActivity : ComponentActivity() {
         super.attachBaseContext(LocaleHelper.createLocalizedContext(newBase, locale))
     }
 
+    private var isLaunchingAuth = false
+
     private val confirmCredentialLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        isLaunchingAuth = false
         if (result.resultCode == Activity.RESULT_OK) {
             // Secure credential (PIN, pattern, password, or biometric) succeeded!
             sendDismissBroadcast()
@@ -184,17 +187,42 @@ class AlarmRingingActivity : ComponentActivity() {
         }
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // Intercept volume buttons to trigger smart mute
-        if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
-            val muteIntent = Intent(this, AlarmReceiver::class.java).apply {
-                action = AlarmReceiver.ACTION_MUTE_ALARM
-            }
-            sendBroadcast(muteIntent)
+    private fun triggerInstantPowerMute() {
+        val state = AlarmService.currentAlarmState.value
+        if (state != null && !state.isMuted && !isFinishing && !isDestroyed) {
+            AlarmService.muteImmediately(this)
             Toast.makeText(this, getString(R.string.smart_muted_banner), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.keyCode == KeyEvent.KEYCODE_POWER) {
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                triggerInstantPowerMute()
+            }
+            return super.dispatchKeyEvent(event)
+        }
+        if (event.keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || event.keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                triggerInstantPowerMute()
+            }
             return true
         }
-        return super.onKeyDown(keyCode, event)
+        return super.dispatchKeyEvent(event)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus && !isLaunchingAuth) {
+            triggerInstantPowerMute()
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (!isLaunchingAuth) {
+            triggerInstantPowerMute()
+        }
     }
 
     private fun attemptDismissWithUnlock() {
@@ -208,6 +236,7 @@ class AlarmRingingActivity : ComponentActivity() {
                     getString(R.string.auth_prompt_desc)
                 )
                 if (authIntent != null) {
+                    isLaunchingAuth = true
                     confirmCredentialLauncher.launch(authIntent)
                     return
                 }

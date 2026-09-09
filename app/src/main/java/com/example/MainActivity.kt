@@ -75,6 +75,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -108,7 +109,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             MyApplicationTheme {
                 val context = LocalContext.current
-                var currentLang by remember { mutableStateOf(LocaleHelper.getSelectedLanguage(this@MainActivity)) }
 
                 // Request notification permission for Android 13+
                 val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -131,13 +131,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 AlarmClockMainScreen(
-                    viewModel = viewModel,
-                    currentLang = currentLang,
-                    onLanguageChange = { newLang ->
-                        LocaleHelper.setSelectedLanguage(this@MainActivity, newLang)
-                        currentLang = newLang
-                        recreate()
-                    }
+                    viewModel = viewModel
                 )
             }
         }
@@ -152,9 +146,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmClockMainScreen(
-    viewModel: MainViewModel,
-    currentLang: String,
-    onLanguageChange: (String) -> Unit
+    viewModel: MainViewModel
 ) {
     val alarms by viewModel.alarms.collectAsStateWithLifecycle()
     val logs by viewModel.logs.collectAsStateWithLifecycle()
@@ -163,7 +155,6 @@ fun AlarmClockMainScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     var editingAlarm by remember { mutableStateOf<AlarmItem?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
-    var showLanguageMenu by remember { mutableStateOf(false) }
 
     // Live clock in top bar
     var currentTimeString by remember { mutableStateOf("") }
@@ -186,12 +177,14 @@ fun AlarmClockMainScreen(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth().padding(end = 4.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 12.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(38.dp)
+                                    .size(36.dp)
                                     .clip(CircleShape)
                                     .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
@@ -200,109 +193,26 @@ fun AlarmClockMainScreen(
                                     imageVector = Icons.Default.Alarm,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.size(22.dp)
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = stringResource(R.string.app_name),
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = stringResource(R.string.app_subtitle),
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        // Digital Clock display & Language Selector
-                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = currentTimeString,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
+                                text = stringResource(R.string.app_name),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
-
-                            Box {
-                                IconButton(
-                                    onClick = { showLanguageMenu = true },
-                                    modifier = Modifier.testTag("language_button")
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Language,
-                                        contentDescription = stringResource(R.string.lang_title),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                DropdownMenu(
-                                    expanded = showLanguageMenu,
-                                    onDismissRequest = { showLanguageMenu = false }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Text(stringResource(R.string.lang_english))
-                                                if (currentLang == LocaleHelper.LANG_ENGLISH) {
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            onLanguageChange(LocaleHelper.LANG_ENGLISH)
-                                            showLanguageMenu = false
-                                        }
-                                    )
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Text(stringResource(R.string.lang_persian))
-                                                if (currentLang == LocaleHelper.LANG_PERSIAN) {
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            onLanguageChange(LocaleHelper.LANG_PERSIAN)
-                                            showLanguageMenu = false
-                                        }
-                                    )
-                                    DropdownMenuItem(
-                                        text = {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Text(stringResource(R.string.lang_system))
-                                                if (currentLang == LocaleHelper.LANG_SYSTEM) {
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                                }
-                                            }
-                                        },
-                                        onClick = {
-                                            onLanguageChange(LocaleHelper.LANG_SYSTEM)
-                                            showLanguageMenu = false
-                                        }
-                                    )
-                                }
-                            }
                         }
+
+                        // Digital Clock display
+                        Text(
+                            text = currentTimeString,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -342,10 +252,23 @@ fun AlarmClockMainScreen(
                     onClick = { selectedTab = 0 },
                     modifier = Modifier.testTag("alarms_tab_button"),
                     text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Default.Alarm, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.alarms_tab, alarms.size))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Alarm,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = stringResource(R.string.alarms_tab, alarms.size),
+                                fontSize = 12.sp,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 )
@@ -354,10 +277,23 @@ fun AlarmClockMainScreen(
                     onClick = { selectedTab = 1 },
                     modifier = Modifier.testTag("logs_tab_button"),
                     text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Default.History, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.logs_tab, logs.size))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.History,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = stringResource(R.string.logs_tab, logs.size),
+                                fontSize = 11.5.sp,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 )

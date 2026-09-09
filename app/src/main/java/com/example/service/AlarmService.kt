@@ -20,6 +20,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.example.AlarmApplication
 import com.example.R
 import com.example.data.AppDatabase
@@ -48,6 +49,31 @@ class AlarmService : Service() {
 
         private val _currentAlarmState = MutableStateFlow<AlarmRingingState?>(null)
         val currentAlarmState: StateFlow<AlarmRingingState?> = _currentAlarmState.asStateFlow()
+
+        @Volatile
+        private var instance: AlarmService? = null
+
+        fun muteImmediately(context: Context) {
+            val service = instance
+            if (service != null) {
+                service.serviceScope.launch(Dispatchers.Main) {
+                    service.handlePowerButtonMute()
+                }
+            } else {
+                val intent = Intent(context, AlarmService::class.java).apply {
+                    action = AlarmReceiver.ACTION_MUTE_ALARM
+                }
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        ContextCompat.startForegroundService(context, intent)
+                    } else {
+                        context.startService(intent)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 
     data class AlarmRingingState(
@@ -90,6 +116,7 @@ class AlarmService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        instance = this
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
@@ -322,6 +349,7 @@ class AlarmService : Service() {
         // Silence audio & stop vibration immediately
         try {
             mediaPlayer?.setVolume(0f, 0f)
+            mediaPlayer?.pause()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -371,12 +399,21 @@ class AlarmService : Service() {
         isMuted = false
         remainingMuteSeconds = 0
 
-        // Resume at full target volume!
         val targetVolumePercent = alarm.volume.coerceIn(10, 100)
         val targetFraction = targetVolumePercent / 100f
         try {
-            mediaPlayer?.setVolume(targetFraction, targetFraction)
-            currentVolumePercent = targetVolumePercent
+            if (alarm.isGradualVolume) {
+                // User requested: reset gradual volume increase starting from low volume and ramp up every 10 seconds
+                val startVolume = 0.20f.coerceAtMost(targetFraction)
+                mediaPlayer?.setVolume(startVolume, startVolume)
+                mediaPlayer?.start()
+                currentVolumePercent = (startVolume * 100).toInt()
+                startGradualVolumeRamp(targetFraction, startVolume)
+            } else {
+                mediaPlayer?.setVolume(targetFraction, targetFraction)
+                mediaPlayer?.start()
+                currentVolumePercent = targetVolumePercent
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -536,6 +573,9 @@ class AlarmService : Service() {
         }
 
         _currentAlarmState.value = null
+        if (instance == this) {
+            instance = null
+        }
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
