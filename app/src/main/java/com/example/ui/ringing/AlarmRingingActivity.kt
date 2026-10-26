@@ -145,6 +145,18 @@ class AlarmRingingActivity : ComponentActivity() {
             MyApplicationTheme(darkTheme = true) {
                 val state by AlarmService.currentAlarmState.collectAsStateWithLifecycle()
 
+                // Keep the screen awake while the alarm is actively ringing, so the
+                // screen never auto-times-out during ringing and a Power press always
+                // results in screen-off (the instant mute path). When muted, release
+                // the flag so the screen is allowed to turn off and stay off.
+                LaunchedEffect(state?.isMuted == true) {
+                    if (state?.isMuted == true) {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    } else {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                }
+
                 // If service stopped, close ringing screen
                 LaunchedEffect(state) {
                     if (state == null) {
