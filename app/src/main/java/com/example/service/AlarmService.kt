@@ -36,7 +36,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -308,19 +307,19 @@ class AlarmService : Service() {
                 isLooping = true
             }
 
+            mediaPlayer?.prepare()
+
             if (alarm.isGradualVolume) {
-                // Crescendo: start gently at 20% and increase noticeably every 10 seconds
-                val startVolume = 0.20f.coerceAtMost(targetVolumeFraction)
-                mediaPlayer?.setVolume(startVolume, startVolume)
+                // Crescendo: start quietly and ramp up smoothly over the configured duration
+                val startVolume = (targetVolumeFraction * 0.15f).coerceIn(0.05f, targetVolumeFraction)
                 currentVolumePercent = (startVolume * 100).toInt()
-                mediaPlayer?.prepare()
+                mediaPlayer?.setVolume(startVolume, startVolume)
                 mediaPlayer?.start()
 
-                startGradualVolumeRamp(targetVolumeFraction, startVolume)
+                startGradualVolumeRamp(targetVolumeFraction, startVolume, alarm.gradualDurationSeconds)
             } else {
-                mediaPlayer?.setVolume(targetVolumeFraction, targetVolumeFraction)
                 currentVolumePercent = targetVolumePercent
-                mediaPlayer?.prepare()
+                mediaPlayer?.setVolume(targetVolumeFraction, targetVolumeFraction)
                 mediaPlayer?.start()
             }
         } catch (e: Exception) {
@@ -332,22 +331,30 @@ class AlarmService : Service() {
         }
     }
 
-    private fun startGradualVolumeRamp(targetVolumeFraction: Float, startVolume: Float) {
+    private fun startGradualVolumeRamp(
+        targetVolumeFraction: Float,
+        startVolume: Float,
+        durationSeconds: Int
+    ) {
         gradualVolumeJob?.cancel()
         gradualVolumeJob = serviceScope.launch {
-            val stepTimeMs = 10_000L // Increase volume every 10 seconds
-            val stepIncrement = 0.20f // Noticeable increase of 20% per step
+            // Smooth continuous ramp: small volume steps every 250ms over the
+            // configured duration, instead of flat 10-second chunks.
+            val stepMs = 250L
+            val totalSteps = (durationSeconds.coerceIn(10, 120) * 1000L / stepMs).toInt()
+            val stepIncrement = (targetVolumeFraction - startVolume) / totalSteps
 
             var currentVol = startVolume
-            while (isActive && !isMuted && currentVol < targetVolumeFraction) {
-                delay(stepTimeMs)
-                if (isMuted) break
+            for (step in 1..totalSteps) {
+                delay(stepMs)
+                if (isMuted) return@launch
                 currentVol = (currentVol + stepIncrement).coerceAtMost(targetVolumeFraction)
                 mediaPlayer?.setVolume(currentVol, currentVol)
                 currentVolumePercent = (currentVol * 100).toInt()
                 updateState()
             }
-            if (!isMuted && currentVol >= targetVolumeFraction) {
+
+            if (!isMuted) {
                 mediaPlayer?.setVolume(targetVolumeFraction, targetVolumeFraction)
                 currentVolumePercent = (targetVolumeFraction * 100).toInt()
                 updateState()
@@ -454,12 +461,12 @@ class AlarmService : Service() {
         val targetFraction = targetVolumePercent / 100f
         try {
             if (alarm.isGradualVolume) {
-                // User requested: reset gradual volume increase starting from low volume and ramp up every 10 seconds
-                val startVolume = 0.20f.coerceAtMost(targetFraction)
+                // Reset gradual volume increase: start low and ramp up smoothly again
+                val startVolume = (targetFraction * 0.15f).coerceIn(0.05f, targetFraction)
+                currentVolumePercent = (startVolume * 100).toInt()
                 mediaPlayer?.setVolume(startVolume, startVolume)
                 mediaPlayer?.start()
-                currentVolumePercent = (startVolume * 100).toInt()
-                startGradualVolumeRamp(targetFraction, startVolume)
+                startGradualVolumeRamp(targetFraction, startVolume, alarm.gradualDurationSeconds)
             } else {
                 mediaPlayer?.setVolume(targetFraction, targetFraction)
                 mediaPlayer?.start()
