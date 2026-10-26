@@ -392,7 +392,7 @@ fun AlarmEditDialog(
                         daysOfWeek = selectedDays.toList(),
                         volume = volume,
                         isGradualVolume = isGradualVolume,
-                        gradualDurationSeconds = 30,
+                        gradualDurationSeconds = 20,
                         isSmartMuteEnabled = isSmartMuteEnabled,
                         vibrate = vibrate
                     )
