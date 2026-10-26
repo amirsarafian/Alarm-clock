@@ -47,6 +47,12 @@ class AlarmService : Service() {
     companion object {
         const val NOTIFICATION_ID = 2001
 
+        // The alarm itself wakes the screen right after triggering (full-screen
+        // intent / turnScreenOn), which fires ACTION_SCREEN_ON. Screen-on events
+        // within this window must NOT be treated as a user power-press, otherwise
+        // every alarm would mute itself the moment it starts ringing.
+        private const val SCREEN_ON_GRACE_MS = 10_000L
+
         private val _currentAlarmState = MutableStateFlow<AlarmRingingState?>(null)
         val currentAlarmState: StateFlow<AlarmRingingState?> = _currentAlarmState.asStateFlow()
 
@@ -100,6 +106,7 @@ class AlarmService : Service() {
     private var remainingMuteSeconds = 60
     private var currentVolumePercent = 0
     private var isScreenReceiverRegistered = false
+    private var screenOnGraceUntilMs = 0L
 
     private val screenAndUnlockReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -107,6 +114,15 @@ class AlarmService : Service() {
                 Intent.ACTION_SCREEN_OFF -> {
                     // User pressed hardware Power button!
                     handlePowerButtonMute()
+                }
+                Intent.ACTION_SCREEN_ON -> {
+                    // Screen was woken while the alarm is still ringing (user pressed
+                    // Power to look at the phone). Mute instantly, same as a power
+                    // press — except for the alarm's own wake right after triggering,
+                    // which falls inside the grace window.
+                    if (System.currentTimeMillis() >= screenOnGraceUntilMs) {
+                        handlePowerButtonMute()
+                    }
                 }
                 Intent.ACTION_USER_PRESENT -> {
                     // User unlocked phone!
@@ -140,6 +156,7 @@ class AlarmService : Service() {
 
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_USER_PRESENT)
         }
         registerReceiver(screenAndUnlockReceiver, filter)
@@ -245,6 +262,10 @@ class AlarmService : Service() {
                 val notification = buildForegroundNotification(resolvedAlarm, false, 0)
                 startForeground(NOTIFICATION_ID, notification)
                 updateState()
+
+                // Arm the SCREEN_ON grace window before launching the ringing
+                // screen, because its turnScreenOn wake fires ACTION_SCREEN_ON.
+                screenOnGraceUntilMs = System.currentTimeMillis() + SCREEN_ON_GRACE_MS
 
                 // Launch AlarmRingingActivity full screen
                 val ringingIntent = Intent(applicationContext, AlarmRingingActivity::class.java).apply {
