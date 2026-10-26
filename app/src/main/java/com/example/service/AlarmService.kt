@@ -300,8 +300,11 @@ class AlarmService : Service() {
                 setDataSource(applicationContext, ringtoneUri)
                 setAudioAttributes(
                     AudioAttributes.Builder()
+                        // USAGE_ALARM keeps playback on the alarm stream, but MUSIC
+                        // content avoids the device's sonification DRC/loudness
+                        // processing that would flatten out the volume ramp.
                         .setUsage(AudioAttributes.USAGE_ALARM)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build()
                 )
                 isLooping = true
@@ -310,13 +313,13 @@ class AlarmService : Service() {
             mediaPlayer?.prepare()
 
             if (alarm.isGradualVolume) {
-                // Crescendo: start quietly and ramp up smoothly over the configured duration
-                val startVolume = (targetVolumeFraction * 0.15f).coerceIn(0.05f, targetVolumeFraction)
+                // Crescendo: start nearly silent, ramp up in the perceptual (dB) domain
+                val startVolume = crescendoStartVolume(targetVolumeFraction)
                 currentVolumePercent = (startVolume * 100).toInt()
                 mediaPlayer?.setVolume(startVolume, startVolume)
                 mediaPlayer?.start()
 
-                startGradualVolumeRamp(targetVolumeFraction, startVolume, alarm.gradualDurationSeconds)
+                startGradualVolumeRamp(targetVolumeFraction, alarm.gradualDurationSeconds)
             } else {
                 currentVolumePercent = targetVolumePercent
                 mediaPlayer?.setVolume(targetVolumeFraction, targetVolumeFraction)
@@ -331,26 +334,36 @@ class AlarmService : Service() {
         }
     }
 
+    /**
+     * Crescendo starting amplitude: about -32 dB below the target volume
+     * (quiet but audible), so the ramp has full perceptual range to grow through.
+     */
+    private fun crescendoStartVolume(targetVolumeFraction: Float): Float =
+        (targetVolumeFraction * 0.025f).coerceAtLeast(0.01f)
+
     private fun startGradualVolumeRamp(
         targetVolumeFraction: Float,
-        startVolume: Float,
         durationSeconds: Int
     ) {
         gradualVolumeJob?.cancel()
         gradualVolumeJob = serviceScope.launch {
-            // Smooth continuous ramp: small volume steps every 250ms over the
-            // configured duration, instead of flat 10-second chunks.
-            val stepMs = 250L
+            // Human hearing is logarithmic: equal dB steps sound like equal loudness
+            // steps, while a linear amplitude ramp sounds almost constant. So ramp
+            // from -32 dB up to the target volume, one small step every 300ms.
+            val stepMs = 300L
             val totalSteps = (durationSeconds.coerceIn(10, 120) * 1000L / stepMs).toInt()
-            val stepIncrement = (targetVolumeFraction - startVolume) / totalSteps
+            val startDb = -32f
+            val target = targetVolumeFraction.coerceIn(0.05f, 1f)
 
-            var currentVol = startVolume
             for (step in 1..totalSteps) {
                 delay(stepMs)
                 if (isMuted) return@launch
-                currentVol = (currentVol + stepIncrement).coerceAtMost(targetVolumeFraction)
-                mediaPlayer?.setVolume(currentVol, currentVol)
-                currentVolumePercent = (currentVol * 100).toInt()
+                val progress = step.toFloat() / totalSteps
+                val vol = (target * Math.pow(10.0, (startDb * (1f - progress) / 20f).toDouble()))
+                    .toFloat()
+                    .coerceIn(0f, 1f)
+                mediaPlayer?.setVolume(vol, vol)
+                currentVolumePercent = (vol * 100).toInt()
                 updateState()
             }
 
@@ -461,12 +474,12 @@ class AlarmService : Service() {
         val targetFraction = targetVolumePercent / 100f
         try {
             if (alarm.isGradualVolume) {
-                // Reset gradual volume increase: start low and ramp up smoothly again
-                val startVolume = (targetFraction * 0.15f).coerceIn(0.05f, targetFraction)
+                // Reset gradual volume increase from near-silent, ramping up perceptually
+                val startVolume = crescendoStartVolume(targetFraction)
                 currentVolumePercent = (startVolume * 100).toInt()
                 mediaPlayer?.setVolume(startVolume, startVolume)
                 mediaPlayer?.start()
-                startGradualVolumeRamp(targetFraction, startVolume, alarm.gradualDurationSeconds)
+                startGradualVolumeRamp(targetFraction, alarm.gradualDurationSeconds)
             } else {
                 mediaPlayer?.setVolume(targetFraction, targetFraction)
                 mediaPlayer?.start()
